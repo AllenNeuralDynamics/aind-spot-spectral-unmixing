@@ -8,6 +8,7 @@ a complete round of multichannel data.
 import logging
 from pathlib import Path
 from typing import List, Optional
+import argparse
 
 import numpy as np
 import pandas as pd
@@ -17,14 +18,15 @@ from spot_analysis.data_loader import SpotDataLoader
 from spot_analysis.spot_processor import SpotProcessor
 from spot_analysis.ratio_calculator import RatioCalculator
 from spot_analysis.unmixer import SpotUnmixer
+from spot_analysis.cell_by_gene_table import cell_by_gene_processor
 
 
 class SpotAnalysisPipeline:
     def __init__(
         self,
         round_number: int,
-        spots_folder: Path,
-        output_folder: Path,
+        spots_folder: Path = Path('/data/'),
+        output_folder: Path = Path('/results/'),
         min_distances: Optional[List[float]] = None
     ):
         """
@@ -49,6 +51,7 @@ class SpotAnalysisPipeline:
         self.processor = SpotProcessor()
         self.ratio_calculator = RatioCalculator()
         self.unmixer = SpotUnmixer()
+        self.cell_by_gene_processor = cell_by_gene_processor()
         
         # Setup logging
         self.logger = self._setup_logging()
@@ -102,6 +105,11 @@ class SpotAnalysisPipeline:
                 Config.OUTPUT_FOLDER / 
                 f'mixed_spots_R{Config.ROUND_N}.pkl'
             )
+
+            spots_df.to_pickle(
+                Config.SCRATCH_FOLDER / 
+                f'mixed_spots_R{Config.ROUND_N}.pkl'
+            )
             
             # 3. Calculate ratios
             self.logger.info("Calculating channel ratios...")
@@ -144,7 +152,26 @@ class SpotAnalysisPipeline:
             # 7. Save summary statistics
             self._save_summary_statistics(results)
             
+            
+
+            # 8. Generate cleaned up tables for analysis 
+            processor = cell_by_gene_processor()
+            unmixed_results, mixed_results = processor.process_pipeline([Config.ROUND_N])
+            # Save final results
+            #unmixed_results.to_csv(
+            #    Config.OUTPUT_FOLDER / 
+            #    f'unmixed_spots_R{Config.ROUND_N}.csv'
+            #)
+            #unmixed_results.to_pickle(
+            #    Config.OUTPUT_FOLDER / 
+            #    f'unmixed_spots_R{Config.ROUND_N}.pkl'
+            #)
+            #mixed_results.to_csv(
+            #    Config.OUTPUT_FOLDER / 
+            #    f'mixed_spots_R{Config.ROUND_N}.csv'
+            #)
             self.logger.info("Processing completed successfully")
+
             return results
             
         except Exception as e:
@@ -176,12 +203,18 @@ class SpotAnalysisPipeline:
 def main():
     """Main entry point"""
     # Example usage
-    pipeline = SpotAnalysisPipeline(
-        round_number=13,
-        spots_folder=Path('/data/'),
-        output_folder=Path('/results/'),
-        min_distances=[3.0, 4.0, 5.0]
-    )
+    # pipeline = SpotAnalysisPipeline(
+    #    round_number=13,
+    #    spots_folder=Path('/data/'),
+    #    output_folder=Path('/results/'),
+    #    min_distances=[3.0, 4.0, 5.0]
+    # )
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("round", type=str, help="Dataset round until procedures.json is finished")
+    args = parser.parse_args()
+    round = int(args.round)
+    pipeline = SpotAnalysisPipeline(round_number = round, min_distances = [3])
     
     results = pipeline.run()
     

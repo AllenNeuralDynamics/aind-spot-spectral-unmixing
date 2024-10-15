@@ -186,9 +186,7 @@ class SpotUnmixer:
         # Combine results
         unmixed_df = pd.concat(unmixed_spots, ignore_index=True)
         
-        # Save results if output folder is configured
-        if self.config.OUTPUT_FOLDER:
-            self._save_results(unmixed_df, min_dist)
+        self._save_results(unmixed_df, min_dist)
             
         return unmixed_df, channel_stats
     
@@ -196,11 +194,16 @@ class SpotUnmixer:
         """Save unmixed spots to file"""
         output_path = (
             self.config.OUTPUT_FOLDER /
-            f'unmixed_spots_R{self.config.ROUND_N}_minDist_{min_dist}.pkl'
+            f'unmixed_spots_R{self.config.ROUND_N}_minDist_{int(min_dist)}.pkl'
         )
-        
+        scratch_path = (
+            self.config.SCRATCH_FOLDER /
+            f'unmixed_spots_R{self.config.ROUND_N}_minDist_{int(min_dist)}.pkl'
+        )
+
         output_path.parent.mkdir(parents=True, exist_ok=True)
         unmixed_df.to_pickle(output_path)
+        unmixed_df.to_pickle(scratch_path)
         
     def process_multiple_distances(
         self,
