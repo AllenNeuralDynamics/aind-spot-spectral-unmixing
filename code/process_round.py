@@ -203,18 +203,20 @@ class SpotAnalysisPipeline:
 def main():
     """Main entry point"""
     # Example usage
-    # pipeline = SpotAnalysisPipeline(
-    #    round_number=13,
-    #    spots_folder=Path('/data/'),
-    #    output_folder=Path('/results/'),
-    #    min_distances=[3.0, 4.0, 5.0]
-    # )
+    pipeline = SpotAnalysisPipeline(
+       round_number=13,
+       spots_folder=Path('/data/'),
+       output_folder=Path('/results/'),
+       min_distances=[3.0, 4.0, 5.0]
+    )
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("round", type=str, help="Dataset round until procedures.json is finished")
-    args = parser.parse_args()
-    round = int(args.round)
-    pipeline = SpotAnalysisPipeline(round_number = round, min_distances = [3])
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("round", type=str, help="Dataset round until procedures.json is finished")
+    # args = parser.parse_args()
+    # round = int(args.round)
+
+
+    # pipeline = SpotAnalysisPipeline(round_number = round, min_distances = [3])
     
     results = pipeline.run()
     

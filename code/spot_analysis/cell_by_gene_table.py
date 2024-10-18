@@ -11,7 +11,6 @@ from typing import Any
 from .config import Config
 
 
-
 @dataclass
 # class SpotProcessingConfig:
 #     """Configuration for spot processing pipeline"""
@@ -62,7 +61,7 @@ class cell_by_gene_processor:
         """Load segmentation data for given rounds"""
         segmentation_df = pd.DataFrame()
         
-        for rn in rounds:
+        for rn in rounds: #TODO update this file name with the standard filename
             file_location = self.config.DATA_FOLDER / f'reference_data_segmentation_R{rn}_metrics/metrics.pickle'
             with open(file_location, 'rb') as file:
                 round_data = pickle.load(file)
