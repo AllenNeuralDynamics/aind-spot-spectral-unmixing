@@ -1,0 +1,49 @@
+{
+	"version": 1,
+	"base_image": "codeocean/lightning-jupyterlab-py39:1.0",
+	"options": {
+		"registry_host_arg": true,
+		"git_ask_pass": true
+	},
+	"installers": {
+		"pip": {
+			"packages": [
+				{
+					"name": "dask"
+				},
+				{
+					"name": "joblib"
+				},
+				{
+					"name": "matplotlib"
+				},
+				{
+					"name": "numpy"
+				},
+				{
+					"name": "pandas"
+				},
+				{
+					"name": "scipy"
+				},
+				{
+					"name": "seaborn"
+				},
+				{
+					"name": "seaborn-image"
+				},
+				{
+					"name": "tqdm"
+				},
+				{
+					"name": "tqdm-joblib"
+				},
+				{
+					"name": "zarr"
+				}
+			],
+			"options": {},
+			"pre_install_options": {}
+		}
+	}
+}
