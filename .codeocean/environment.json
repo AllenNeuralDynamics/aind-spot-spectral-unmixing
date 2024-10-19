@@ -9,37 +9,48 @@
 		"pip": {
 			"packages": [
 				{
-					"name": "dask"
+					"name": "dask",
+					"version": "2024.5.2"
 				},
 				{
-					"name": "joblib"
+					"name": "joblib",
+					"version": "1.4.2"
 				},
 				{
-					"name": "matplotlib"
+					"name": "matplotlib",
+					"version": "3.9.2"
 				},
 				{
-					"name": "numpy"
+					"name": "numpy",
+					"version": "2.0.2"
 				},
 				{
-					"name": "pandas"
+					"name": "pandas",
+					"version": "2.2.3"
 				},
 				{
-					"name": "scipy"
+					"name": "scipy",
+					"version": "1.13.1"
 				},
 				{
-					"name": "seaborn"
+					"name": "seaborn",
+					"version": "0.13.2"
 				},
 				{
-					"name": "seaborn-image"
+					"name": "seaborn-image",
+					"version": "0.10.0"
 				},
 				{
-					"name": "tqdm"
+					"name": "tqdm",
+					"version": "4.66.5"
 				},
 				{
-					"name": "tqdm-joblib"
+					"name": "tqdm-joblib",
+					"version": "0.0.4"
 				},
 				{
-					"name": "zarr"
+					"name": "zarr",
+					"version": "2.18.2"
 				}
 			],
 			"options": {},
