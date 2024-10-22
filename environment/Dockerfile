@@ -1,4 +1,4 @@
-# hash:sha256:850dceedb3903b15fd33077307a44b2974dcbef5d197883b83546305b796dcc7
+# hash:sha256:828d8c903c66d675a42be6e7c3b538d5d11e44a4241d3409f55d44d1b8ca8645
 ARG REGISTRY_HOST
 FROM $REGISTRY_HOST/codeocean/lightning-jupyterlab-py39:1.0
 
@@ -20,3 +20,10 @@ RUN pip install -U --no-cache-dir \
     tqdm==4.66.5 \
     tqdm-joblib==0.0.4 \
     zarr==2.18.2
+
+ADD "https://github.com/coder/code-server/releases/download/v4.9.0/code-server-4.9.0-linux-amd64.tar.gz" /.code-server/code-server.tar.gz
+	
+RUN cd /.code-server \
+	&& tar -xvf code-server.tar.gz \
+	&& rm code-server.tar.gz \
+	&& ln -s /.code-server/code-server-4.9.0-linux-amd64/bin/code-server  /usr/bin/code-server
