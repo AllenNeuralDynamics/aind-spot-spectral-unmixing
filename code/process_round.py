@@ -24,7 +24,7 @@ from spot_analysis.cell_by_gene_table import cell_by_gene_processor
 class SpotAnalysisPipeline:
     def __init__(
         self,
-        round_number: int,
+        #round_number: int,
         spots_folder: Path = Path('/data/'),
         output_folder: Path = Path('/results/'),
         min_distances: Optional[List[float]] = None
@@ -39,7 +39,9 @@ class SpotAnalysisPipeline:
             min_distances: List of minimum distances to try for unmixing
         """
         # Update configuration
-        Config.ROUND_N = round_number
+        #Config.ROUND_N = round_number
+        #Config = Config()
+        self.config = Config()
         Config.SPOTS_FOLDER = spots_folder
         Config.OUTPUT_FOLDER = output_folder
         

@@ -34,30 +34,64 @@ class SpotDataLoader:
     
 
     #currently broken... only returning a single item from each list? 
-    def load_multichannel_data(self, spots_df: pd.DataFrame, channel: str) -> pd.DataFrame:
-        """Load and merge multichannel data for a specific channel"""
-        folder_paths = self.config.get_folder_paths()['multichan_folders']
+    def load_multichannel_data(self, ch: str, m_ch: str) -> pd.DataFrame:
+        # """Load and merge multichannel data for a specific channel"""
+        # folder_paths = self.config.get_folder_paths()['multichan_folders']
         
-        for other_chan in self.config.get_round_channels().keys():
-            if other_chan != channel:
-                multi_spot_cols = ['z', 'y', 'x', f'chan_{other_chan}_fg', f'chan_{other_chan}_bg']
-                multichan_path = self.config.SPOTS_FOLDER / folder_paths[channel][other_chan]
+        # for other_chan in self.config.get_round_channels().keys():
+        #     if other_chan != channel:
+        #         multi_spot_cols = ['z', 'y', 'x', f'chan_{other_chan}_fg', f'chan_{other_chan}_bg']
+        #         multichan_path = self.config.SPOTS_FOLDER / folder_paths[channel][other_chan]
                 
-                multichan_df = pd.DataFrame(
-                    np.load(multichan_path),
-                    columns=multi_spot_cols
-                )
-                # multichan_df['chan'] = other_chan
-                spots_df = spots_df.merge(multichan_df, how='inner',  on=['z', 'y', 'x'] )
+        #         multichan_df = pd.DataFrame(
+        #             np.load(multichan_path),
+        #             columns=multi_spot_cols
+        #         )
+        #         # multichan_df['chan'] = other_chan
+        #         spots_df = spots_df.merge(multichan_df, how='inner',  on=['z', 'y', 'x'] )
         
-        return spots_df
-    
+        # return spots_df
+        
+        round_n = self.config.ROUND_N
+        multichan_folders = self.config.get_folder_paths()['multichan_folders']
+        spot_col_order = ['spot_id','chan','chan_spot_id','cell_id','round','z','y','x','z_center','y_center','x_center','dist','r'] 
+        # spot_cols = ['Z','Y','X','Z_center','Y_center','X_center','dist','r','SEG_ID','FG','BG'] #what comes from CSV 
+        #spot_cols = ['z','y','x','z_center','y_center','x_center','dist','r','chan_'+str(ch)+'_fg','chan_'+str(ch)+'_bg','cell_id']
+        # spots = pd.DataFrame(np.load(self.config.SPOTS_FOLDER.joinpath(spots_folders[str(ch)])),columns=spot_cols)
+        spots = pd.read_csv(self.config.SPOTS_FOLDER.joinpath(multichan_folders[str(ch)][str(m_ch)]))
+        spots = spots.rename(columns = {'Z':'z',
+                                 'Y': 'y',
+                                 'X': 'x', 
+                                 'Z_center': 'z_center', 
+                                 'Y_center': 'y_center', 
+                                 'X_center': 'x_center', 
+                                 'SEG_ID': 'cell_id', 
+                                 'FG': f'chan_{ch}_fg', 
+                                 'BG': f'chan_{ch}_bg'})
+        spots['round']=str(round_n)
+        spots['chan']=str(ch)
+        spots['spot_id']=range(1, len(spots)+1)
+        spots['chan_spot_id']=range(1, len(spots)+1)
+        spots = spots[list(spot_col_order)+list(np.setdiff1d(spots.columns,spot_col_order))]
+        return spots
+
     def load_detected_spots_for_channel(self, ch):
         round_n = self.config.ROUND_N
         spots_folders = self.config.get_folder_paths()['spots_folders']
-        spot_col_order = ['spot_id','chan','chan_spot_id','cell_id','round','z','y','x','z_center','y_center','x_center','dist','r']
-        spot_cols = ['z','y','x','z_center','y_center','x_center','dist','r','chan_'+str(ch)+'_fg','chan_'+str(ch)+'_bg','cell_id']
-        spots = pd.DataFrame(np.load(self.config.SPOTS_FOLDER.joinpath(spots_folders[str(ch)])),columns=spot_cols)
+        spot_col_order = ['spot_id','chan','chan_spot_id','cell_id','round','z','y','x','z_center','y_center','x_center','dist','r'] 
+        # spot_cols = ['Z','Y','X','Z_center','Y_center','X_center','dist','r','SEG_ID','FG','BG'] #what comes from CSV 
+        #spot_cols = ['z','y','x','z_center','y_center','x_center','dist','r','chan_'+str(ch)+'_fg','chan_'+str(ch)+'_bg','cell_id']
+        # spots = pd.DataFrame(np.load(self.config.SPOTS_FOLDER.joinpath(spots_folders[str(ch)])),columns=spot_cols)
+        spots = pd.read_csv(self.config.SPOTS_FOLDER.joinpath(spots_folders[str(ch)]))
+        spots = spots.rename(columns = {'Z':'z',
+                                 'Y': 'y',
+                                 'X': 'x', 
+                                 'Z_center': 'z_center', 
+                                 'Y_center': 'y_center', 
+                                 'X_center': 'x_center', 
+                                 'SEG_ID': 'cell_id', 
+                                 'FG': f'chan_{ch}_fg', 
+                                 'BG': f'chan_{ch}_bg'})
         spots['round']=str(round_n)
         spots['chan']=str(ch)
         spots['spot_id']=range(1, len(spots)+1)
@@ -79,6 +113,8 @@ class SpotDataLoader:
         # return pd.concat(all_spots, ignore_index=True)
 
         channels = self.config.get_round_channels().keys()
+        channels = [i for i in list(channels) if i!= '405']
+
         round_n = self.config.ROUND_N
         multichan_folders = self.config.get_folder_paths()['multichan_folders']
 
@@ -87,33 +123,83 @@ class SpotDataLoader:
         for ch in channels:
             channel_spots[ch] = self.load_detected_spots_for_channel(ch)
 
+        #associate single digit channels with wavelengths ... this might not be accurate to imaged track orders
+        multi_ch_dict = {'0': '405', '1': '488', '2': '514', '3': '561', '4':'594', '5': '638'}
+
         for ch in channels:
             # Luminance from loop channel at channel 3's spot locations
-            if str(ch) != '1':
-                m_ch = 1
-                multi_spot_cols = ['z','y','x','chan_'+str(ch)+'_fg','chan_'+str(ch)+'_bg']
-                chan_multichan_df = pd.DataFrame(np.load(self.config.SPOTS_FOLDER.joinpath(multichan_folders[str(ch)][str(m_ch)])),columns=multi_spot_cols)
-                channel_spots[str(m_ch)] = channel_spots[str(m_ch)].merge(chan_multichan_df, on=['z', 'y', 'x'], how='inner')
-            # Luminance from loop channel at channel 2's spot locations
-            if str(ch) != '2':
-                m_ch = 2
-                multi_spot_cols = ['z','y','x','chan_'+str(ch)+'_fg','chan_'+str(ch)+'_bg']
-                chan_multichan_df = pd.DataFrame(np.load(self.config.SPOTS_FOLDER.joinpath(multichan_folders[str(ch)][str(m_ch)])),columns=multi_spot_cols)
-                channel_spots[str(m_ch)] = channel_spots[str(m_ch)].merge(chan_multichan_df, on=['z', 'y', 'x'], how='inner')
-            # Luminance from loop channel at channel 3's spot locations
-            if (str(ch) != '3') & (round_n != 0):
-                m_ch = 3
-                multi_spot_cols = ['z','y','x','chan_'+str(ch)+'_fg','chan_'+str(ch)+'_bg']
-                chan_multichan_df = pd.DataFrame(np.load(self.config.SPOTS_FOLDER.joinpath(multichan_folders[str(ch)][str(m_ch)])),columns=multi_spot_cols)
-                channel_spots[str(m_ch)] = channel_spots[str(m_ch)].merge(chan_multichan_df, on=['z', 'y', 'x'], how='inner')
-            # Luminance from loop channel at channel 4's spot locations
-            if str(ch) != '4':
-                m_ch = 4
-                multi_spot_cols = ['z','y','x','chan_'+str(ch)+'_fg','chan_'+str(ch)+'_bg']
-                chan_multichan_df = pd.DataFrame(np.load(self.config.SPOTS_FOLDER.joinpath(multichan_folders[str(ch)][str(m_ch)])),columns=multi_spot_cols)
-                channel_spots[str(m_ch)] = channel_spots[str(m_ch)].merge(chan_multichan_df, on=['z', 'y', 'x'], how='inner')
+            if len(ch) ==1:
+                # check if ch is single digit or 
+                if str(ch) != '1':
+                    m_ch = 1
+                    multi_spot_cols = ['z','y','x','chan_'+str(ch)+'_fg','chan_'+str(ch)+'_bg']
+                    chan_multichan_df = pd.DataFrame(np.load(self.config.SPOTS_FOLDER.joinpath(multichan_folders[str(ch)][str(m_ch)])),columns=multi_spot_cols)
+                    channel_spots[str(m_ch)] = channel_spots[str(m_ch)].merge(chan_multichan_df, on=['z', 'y', 'x'], how='inner')
+                # Luminance from loop channel at channel 2's spot locations
+                if str(ch) != '2':
+                    m_ch = 2
+                    multi_spot_cols = ['z','y','x','chan_'+str(ch)+'_fg','chan_'+str(ch)+'_bg']
+                    chan_multichan_df = pd.DataFrame(np.load(self.config.SPOTS_FOLDER.joinpath(multichan_folders[str(ch)][str(m_ch)])),columns=multi_spot_cols)
+                    channel_spots[str(m_ch)] = channel_spots[str(m_ch)].merge(chan_multichan_df, on=['z', 'y', 'x'], how='inner')
+                # Luminance from loop channel at channel 3's spot locations
+                if (str(ch) != '3') & (round_n != 0):
+                    m_ch = 3
+                    multi_spot_cols = ['z','y','x','chan_'+str(ch)+'_fg','chan_'+str(ch)+'_bg']
+                    chan_multichan_df = pd.DataFrame(np.load(self.config.SPOTS_FOLDER.joinpath(multichan_folders[str(ch)][str(m_ch)])),columns=multi_spot_cols)
+                    channel_spots[str(m_ch)] = channel_spots[str(m_ch)].merge(chan_multichan_df, on=['z', 'y', 'x'], how='inner')
+                # Luminance from loop channel at channel 4's spot locations
+                if str(ch) != '4':
+                    m_ch = 4
+                    multi_spot_cols = ['z','y','x','chan_'+str(ch)+'_fg','chan_'+str(ch)+'_bg']
+                    chan_multichan_df = pd.DataFrame(np.load(self.config.SPOTS_FOLDER.joinpath(multichan_folders[str(ch)][str(m_ch)])),columns=multi_spot_cols)
+                    channel_spots[str(m_ch)] = channel_spots[str(m_ch)].merge(chan_multichan_df, on=['z', 'y', 'x'], how='inner')
+            else: 
+
+                active_channel_list = channels
+                active_channel_list_without_current_ch = [chan for chan in channels if chan!=ch]
+                for m_ch in active_channel_list_without_current_ch: 
+                    
+                    try: 
+                        multi_spot_cols = ['z','y','x','chan_'+str(ch)+'_fg','chan_'+str(ch)+'_bg']
+                        chan_multichan_df = self.load_multichannel_data(ch, m_ch)
+                        channel_spots[str(m_ch)] = channel_spots[str(m_ch)].merge(chan_multichan_df, on=['z', 'y', 'x'], how = 'inner')
+                    except Exception as e: 
+                        print(f"Error processing channel {ch} at measurement channel {m_ch}: {str(e)}")
+                        continue
 
 
+
+
+
+                # if str(ch) != '488':
+                #     m_ch = 488
+                #     multi_spot_cols = ['z','y','x','chan_'+str(ch)+'_fg','chan_'+str(ch)+'_bg']
+                #     chan_multichan_df = pd.DataFrame(np.load(self.config.SPOTS_FOLDER.joinpath(multichan_folders[str(ch)][str(m_ch)])),columns=multi_spot_cols)
+                #     channel_spots[str(m_ch)] = channel_spots[str(m_ch)].merge(chan_multichan_df, on=['z', 'y', 'x'], how='inner')
+                # # Luminance from loop channel at channel 2's spot locations
+                # if str(ch) != '514':
+                #     m_ch = 514
+                #     multi_spot_cols = ['z','y','x','chan_'+str(ch)+'_fg','chan_'+str(ch)+'_bg']
+                #     chan_multichan_df = pd.DataFrame(np.load(self.config.SPOTS_FOLDER.joinpath(multichan_folders[str(ch)][str(m_ch)])),columns=multi_spot_cols)
+                #     channel_spots[str(m_ch)] = channel_spots[str(m_ch)].merge(chan_multichan_df, on=['z', 'y', 'x'], how='inner')
+                # # Luminance from loop channel at channel 3's spot locations
+                # if (str(ch) != '561'):
+                #     m_ch = 561
+                #     multi_spot_cols = ['z','y','x','chan_'+str(ch)+'_fg','chan_'+str(ch)+'_bg']
+                #     chan_multichan_df = pd.DataFrame(np.load(self.config.SPOTS_FOLDER.joinpath(multichan_folders[str(ch)][str(m_ch)])),columns=multi_spot_cols)
+                #     channel_spots[str(m_ch)] = channel_spots[str(m_ch)].merge(chan_multichan_df, on=['z', 'y', 'x'], how='inner')
+                # # Luminance from loop channel at channel 4's spot locations
+                # if str(ch) != '594':
+                #     m_ch = 594
+                #     multi_spot_cols = ['z','y','x','chan_'+str(ch)+'_fg','chan_'+str(ch)+'_bg']
+                #     chan_multichan_df = pd.DataFrame(np.load(self.config.SPOTS_FOLDER.joinpath(multichan_folders[str(ch)][str(m_ch)])),columns=multi_spot_cols)
+                #     channel_spots[str(m_ch)] = channel_spots[str(m_ch)].merge(chan_multichan_df, on=['z', 'y', 'x'], how='inner')
+                # if str(ch) != '638':
+                #     m_ch = 638
+                #     multi_spot_cols = ['z','y','x','chan_'+str(ch)+'_fg','chan_'+str(ch)+'_bg']
+                #     chan_multichan_df = pd.DataFrame(np.load(self.config.SPOTS_FOLDER.joinpath(multichan_folders[str(ch)][str(m_ch)])),columns=multi_spot_cols)
+                #     channel_spots[str(m_ch)] = channel_spots[str(m_ch)].merge(chan_multichan_df, on=['z', 'y', 'x'], how='inner')
+                
         mixed_spots_df = pd.DataFrame()
         #convert dict of channel_spots to list
         spots_list = list(channel_spots.values())
