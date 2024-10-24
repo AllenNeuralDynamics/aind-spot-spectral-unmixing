@@ -1,0 +1,17 @@
+{
+	"version": 1,
+	"attached_datasets": [
+		{
+			"id": "3cb97c24-fa6e-4f6b-9d0d-972115834101",
+			"mount": "HCR_742354_segmentation-qc-metrics"
+		},
+		{
+			"id": "4efe31b9-4ad5-4326-97ad-d96c2bf75865",
+			"mount": "HCR_742354_2024-08-10_21-00-00_spots"
+		},
+		{
+			"id": "db14047c-7c8f-4e66-addb-45c51e773eda",
+			"mount": "HCR_742354_2024-08-10_21-00-00"
+		}
+	]
+}
