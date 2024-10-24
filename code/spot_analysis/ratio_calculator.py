@@ -12,7 +12,7 @@ class RatioCalculator:
 
         self.config = Config
         # self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')#
-        self.channels = self.config.get_round_channels().keys()
+        self.channels = self.config.get_round_spot_channels()
         
     # def objective_fn(self, r: torch.Tensor, subset: torch.Tensor, L1: float) -> torch.Tensor:
     #     """Calculate objective function for ratio optimization"""
@@ -93,7 +93,8 @@ class RatioCalculator:
     def subset_spots_df(self, thresh_spots):
         if len(thresh_spots)> self.config.N_SUBSET:
             thresh_spots_subsetted = thresh_spots[::int(len(thresh_spots)/self.config.N_SUBSET)]
-
+        else: 
+            thresh_spots_subsetted = thresh_spots
         self.config.N_SUBSET = len(thresh_spots_subsetted)
         return thresh_spots_subsetted
 
@@ -105,13 +106,13 @@ class RatioCalculator:
 
             # Linear least squares objective function
             def objective_fn(r, subset, L1): 
-                n_cam = len(self.config.get_round_channels())
+                n_cam = len(self.config.get_round_spot_channels())
                 r = r / torch.norm(r, dim=0)
                 dot_products = torch.tile(subset @ r, (n_cam, 1, 1))
                 ys = torch.tile(torch.unsqueeze(r,1), (1, subset.shape[0], 1))
                 xs = torch.tile(torch.unsqueeze(torch.transpose(subset, 0, 1),2), (1, 1, n_cam))
                 return torch.sum(torch.min(torch.norm(dot_products * ys - xs, dim=0), dim=1)[0]) + self.config.L1 * torch.sum(torch.abs(r)) 
-            n_cam = len(self.config.get_round_channels())
+            n_cam = len(self.config.get_round_spot_channels())
             initial = np.eye((n_cam)) # Initial ratios matrices for each channel
 
             n_sub = np.int32(self.config.N_SUBSET * self.config.FRAC_SAMPLED)

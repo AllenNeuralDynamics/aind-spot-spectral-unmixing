@@ -19,7 +19,7 @@ class SpotUnmixer:
         """Calculate distances between spots and ratio lines"""
         intensity_cols = [
             f'chan_{ch}_intensity'
-            for ch in self.config.get_round_channels().keys()
+            for ch in self.config.get_round_spot_channels()
         ]
         
         # Convert to GPU tensors
@@ -31,7 +31,7 @@ class SpotUnmixer:
         ).to(self.device).double()
         
         # Calculate fits and distances
-        n_cam = len(self.config.get_round_channels())
+        n_cam = len(self.config.get_round_spot_channels())
         fit = torch.tile(data_gpu @ ratios_gpu, (n_cam, 1, 1))
         fit *= torch.tile(
             torch.unsqueeze(ratios_gpu, 1),
@@ -114,7 +114,7 @@ class SpotUnmixer:
         # Get intensities for the channel
         intensity_cols = [
             f'chan_{ch}_intensity'
-            for ch in self.config.get_round_channels().keys()
+            for ch in self.config.get_round_spot_channels()
         ]
         chan_intensities = spots_df.loc[dist_rank_chan_match, intensity_cols].copy()
         
@@ -163,7 +163,7 @@ class SpotUnmixer:
         channel_stats = []
         
         # Process each channel
-        for idx, channel in enumerate(self.config.get_round_channels().keys()):
+        for idx, channel in enumerate(self.config.get_round_spot_channels()):
             gene = self.config.get_round_channels()[channel]
             
             # Process spots for this channel

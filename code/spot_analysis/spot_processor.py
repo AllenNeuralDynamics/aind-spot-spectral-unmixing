@@ -9,7 +9,7 @@ class SpotProcessor:
     
     def calculate_intensities(self, spots_df: pd.DataFrame) -> pd.DataFrame:
         """Calculate intensities for each channel"""
-        channels = self.config.get_round_channels().keys()
+        channels = self.config.get_round_spot_channels()
         for channel in channels:
             spots_df[f'chan_{channel}_intensity'] = (
                 spots_df[f'chan_{channel}_fg'] - spots_df[f'chan_{channel}_bg']
@@ -18,7 +18,7 @@ class SpotProcessor:
     
     def filter_by_threshold(self, spots_df: pd.DataFrame) -> Tuple[pd.DataFrame, np.ndarray]:
         """Filter spots based on intensity threshold"""
-        intensity_cols = [f'chan_{ch}_intensity' for ch in self.config.get_round_channels().keys()]
+        intensity_cols = [f'chan_{ch}_intensity' for ch in self.config.get_round_spot_channels()]
         
         # Find spots over threshold
         spots_over_thresh = spots_df.loc[

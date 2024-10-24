@@ -118,7 +118,7 @@ class SpotAnalysisPipeline:
             ratio_path = Config.OUTPUT_FOLDER / f'r{Config.ROUND_N}_ratios.txt'
             intensity_cols = [
                 f'chan_{ch}_intensity'
-                for ch in Config.get_round_channels().keys()
+                for ch in Config.get_round_spot_channels()
             ]
             ratios = self.ratio_calculator.calculate_ratios(
                 spots_df[intensity_cols].values,

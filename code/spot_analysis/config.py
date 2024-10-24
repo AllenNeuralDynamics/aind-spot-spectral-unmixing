@@ -119,6 +119,11 @@ class Config:
     @classmethod
     def get_round_channels(cls) -> Dict[str, str]:
         return cls.GENE_DICT[str(cls.ROUND_N)]
+        
+    @classmethod
+    def get_round_spot_channels(cls) -> Dict[str, str]:
+        spot_channels = cls.manifest['spot_channels']
+        return spot_channels
     
     @classmethod
     def get_folder_paths(cls) -> Dict[str, Dict[str, str]]:

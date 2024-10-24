@@ -102,17 +102,9 @@ class SpotDataLoader:
 
     def load_all_spots(self) -> pd.DataFrame:
         """Load and combine all spot data"""
-        # all_spots = []
-        # channels = self.config.get_round_channels().keys()
-        
-        # for channel in channels:
-        #     channel_spots = self.load_channel_spots(channel)
-        #     channel_spots = self.load_multichannel_data(channel_spots, channel)
-        #     all_spots.append(channel_spots)
-        
-        # return pd.concat(all_spots, ignore_index=True)
 
-        channels = self.config.get_round_channels().keys()
+
+        channels = self.config.get_round_spot_channels()
         channels = [i for i in list(channels) if i!= '405']
 
         round_n = self.config.ROUND_N
@@ -123,8 +115,6 @@ class SpotDataLoader:
         for ch in channels:
             channel_spots[ch] = self.load_detected_spots_for_channel(ch)
 
-        #associate single digit channels with wavelengths ... this might not be accurate to imaged track orders
-        multi_ch_dict = {'0': '405', '1': '488', '2': '514', '3': '561', '4':'594', '5': '638'}
 
         for ch in channels:
             # Luminance from loop channel at channel 3's spot locations
@@ -162,7 +152,9 @@ class SpotDataLoader:
                     try: 
                         multi_spot_cols = ['z','y','x','chan_'+str(ch)+'_fg','chan_'+str(ch)+'_bg']
                         chan_multichan_df = self.load_multichannel_data(ch, m_ch)
-                        channel_spots[str(m_ch)] = channel_spots[str(m_ch)].merge(chan_multichan_df, on=['z', 'y', 'x'], how = 'inner')
+                        test_multichan = chan_multichan_df.drop(['spot_id', 'chan', 'chan_spot_id'], axis = 1)
+
+                        channel_spots[str(m_ch)] = channel_spots[m_ch].merge(test_multichan, on = ['z', 'y', 'x', 'cell_id', 'round', 'z_center', 'y_center', 'x_center', 'dist', 'r'], how = 'inner')
                     except Exception as e: 
                         print(f"Error processing channel {ch} at measurement channel {m_ch}: {str(e)}")
                         continue
