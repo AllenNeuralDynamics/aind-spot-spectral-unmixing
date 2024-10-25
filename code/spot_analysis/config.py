@@ -72,7 +72,15 @@ class Config:
         
     
         if not len(manifest_path):
-            raise FileNotFoundError("No processing_manifest.json was found!")
+            print(f'didnt find pipeline processing manifest')
+            #raise FileNotFoundError("No processing_manifest.json was found!")
+        
+            manifest_path = list(pathlib.Path(cls.DATA_FOLDER).glob("*/derived/processing_manifest.json"))
+            if not len(manifest_path):
+                raise FileNotFoundError("No capsule processing_manifest.json was found!")
+
+        
+        print(f'Manifest_path {manifest_path}')
 
         try:
             with open(manifest_path[0], 'r') as f:
