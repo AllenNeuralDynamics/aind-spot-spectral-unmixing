@@ -68,7 +68,7 @@ class Config:
         """Load the processing manifest JSON file"""
 
         # manifest_path = pathlib.Path(cls.dataset_name) / 'derived' / 'processing_manifest.json'
-        manifest_path = list(pathlib.Path(cls.DATA_FOLDER).glob("*/derived/processing_manifest.json"))
+        manifest_path = list(pathlib.Path(cls.DATA_FOLDER).glob("derived/processing_manifest.json"))
         
     
         if not len(manifest_path):
