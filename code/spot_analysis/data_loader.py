@@ -14,7 +14,7 @@ class SpotDataLoader:
     
     """def load_channel_spots(self, channel: str) -> pd.DataFrame:
     #depreciated
-        """Load spots data for a specific channel"""
+
         spot_cols = [
             'z', 'y', 'x', 'z_center', 'y_center', 'x_center',
             'dist', 'r', f'chan_{channel}_fg', f'chan_{channel}_bg', 'cell_id'
