@@ -236,7 +236,7 @@ class Config:
     @classmethod
     def get_folder_paths_pipeline(cls) -> Dict[str, Dict[str, str]]: #get_folder_paths_pipeline
         """Returns folder paths from what is attached in /data/"""
-        spot_regex = r".*(\d{1,3})\/image_data_.*_(\d{1,3})_versus_spots_(\d{1,3})\.csv"
+        spot_regex = r".*(\d{1,3})_stats\/image_data_.*_(\d{1,3})_versus_spots_(\d{1,3})\.csv"
         exclude = set(['*.zarr'])
         spots_folders = {}
         multichan_folders = {}
