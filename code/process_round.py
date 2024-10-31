@@ -137,10 +137,10 @@ class SpotAnalysisPipeline:
             #    stats_df
             #)
             
-            self.logger.info(
-                f"Kept {len(filtered_spots_df)} spots after QC "
-                f"({len(filtered_spots_df)/len(thresh_spots_df)*100:.1f}%)"
-            )
+            #self.logger.info(
+            #    f"Kept {len(filtered_spots_df)} spots after QC "
+            #    f"({len(filtered_spots_df)/len(thresh_spots_df)*100:.1f}%)"
+            #)
             all_chans_filt_stats = self.unmixer.calculate_distances(spots_df, ratios)
             
             # 6. Process multiple minimum distances
