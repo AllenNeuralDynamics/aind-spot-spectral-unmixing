@@ -160,21 +160,21 @@ class cell_by_gene_processor:
         unmixed_spots = self.load_spots(rounds, unmixed=True)
         segmentation = self.load_segmentation(rounds)
         unmixed_annotations = self.process_cell_annotations(unmixed_spots, segmentation)
-        filtered_unmixed = self.filter_by_volume(unmixed_annotations)
+        #filtered_unmixed = self.filter_by_volume(unmixed_annotations)
         
         # Process mixed spots
         mixed_spots = self.load_spots(rounds, unmixed=False)
         mixed_annotations = self.process_cell_annotations(mixed_spots, segmentation)
-        filtered_mixed = self.filter_by_volume(mixed_annotations)
+        #filtered_mixed = self.filter_by_volume(mixed_annotations)
         
         # Save results
-        filtered_unmixed.to_pickle(self.config.SCRATCH_FOLDER / 'unmixed_cell_by_gene.pkl')
-        filtered_mixed.to_pickle(self.config.SCRATCH_FOLDER / 'mixed_cell_by_gene.pkl')
+        unmixed_annotations.to_pickle(self.config.SCRATCH_FOLDER / 'unmixed_cell_by_gene.pkl')
+        mixed_annotations.to_pickle(self.config.SCRATCH_FOLDER / 'mixed_cell_by_gene.pkl')
 
-        filtered_unmixed.to_csv(self.config.OUTPUT_FOLDER / 'unmixed_cell_by_gene.csv')
-        filtered_mixed.to_csv(self.config.OUTPUT_FOLDER / 'mixed_cell_by_gene.csv')
+        unmixed_annotations.to_csv(self.config.OUTPUT_FOLDER / 'unmixed_cell_by_gene.csv')
+        mixed_annotations.to_csv(self.config.OUTPUT_FOLDER / 'mixed_cell_by_gene.csv')
         
-        return filtered_unmixed, filtered_mixed
+        return unmixed_annotations, mixed_annotations
 
 # Example usage
 if __name__ == "__main__":
