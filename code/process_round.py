@@ -127,26 +127,26 @@ class SpotAnalysisPipeline:
             
             # 4. Calculate distances and create stats
             self.logger.info("Calculating distances between spots...")
-            thresh_spots_df = spots_df[spots_df['over_thresh']].copy()
-            stats_df = self.unmixer.calculate_distances(thresh_spots_df, ratios)
+            #thresh_spots_df = spots_df[spots_df['over_thresh']].copy()
+            stats_df = self.unmixer.calculate_distances(spots_df, ratios)
             
-            # 5. Apply QC filters
-            self.logger.info("Applying QC filters...")
-            filtered_spots_df = self.processor.apply_qc_filters(
-                thresh_spots_df,
-                stats_df
-            )
+            # 5. Application of QC filters has been moved to interactive capsule
+            #self.logger.info("Applying QC filters...")
+            #filtered_spots_df = self.processor.apply_qc_filters(
+            #    thresh_spots_df,
+            #    stats_df
+            #)
             
             self.logger.info(
                 f"Kept {len(filtered_spots_df)} spots after QC "
                 f"({len(filtered_spots_df)/len(thresh_spots_df)*100:.1f}%)"
             )
-            all_chans_filt_stats = self.unmixer.calculate_distances(filtered_spots_df, ratios)
+            all_chans_filt_stats = self.unmixer.calculate_distances(spots_df, ratios)
             
             # 6. Process multiple minimum distances
             self.logger.info("Running unmixing with multiple minimum distances...")
             results = self.unmixer.process_multiple_distances(
-                filtered_spots_df,
+                spots_df,
                 all_chans_filt_stats,
                 self.min_distances
             )

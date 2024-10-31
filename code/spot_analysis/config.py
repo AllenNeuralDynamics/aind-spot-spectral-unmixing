@@ -26,14 +26,15 @@ class Config:
     L1 = 0
     LEARNING_RATE = 1e-9
     
-    # QC parameters
+    # QC parameters --- these are getting moved to qc capsule
     CENT_CUTOFF = 1
     CORR_CUTOFF = 0.5
     DIST_CUTOFF = 4
-        
     # cell by gene table parameters    
     min_dist = 3
     volume_quantiles = (0.08, 0.5, 0.95)
+
+
     folder_paths = None
 
     # Gene dictionary
