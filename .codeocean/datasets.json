@@ -2,16 +2,16 @@
 	"version": 1,
 	"attached_datasets": [
 		{
-			"id": "1f27dc31-ce28-4678-80a8-2af4560ddf48",
-			"mount": "HCR_demixing_pipeline_test_asset-2"
+			"id": "278b7782-b171-459c-9ab5-d947d1a94af2",
+			"mount": "HCR_736207-14_2024-09-27_13-00-00"
 		},
 		{
-			"id": "3cb97c24-fa6e-4f6b-9d0d-972115834101",
-			"mount": "HCR_742354_segmentation-qc-metrics"
+			"id": "4b4580f1-eb9a-4425-81d1-f1c3c71d3cbf",
+			"mount": "HCR_736207-14_2024-09-27_spots_temp"
 		},
 		{
-			"id": "db14047c-7c8f-4e66-addb-45c51e773eda",
-			"mount": "HCR_742354_2024-08-10_21-00-00"
+			"id": "50dbe2a9-0d39-4bd8-a469-b604d69ae6bf",
+			"mount": "HCR_736207-14_2024-09-27_mask-metrics"
 		}
 	]
 }
