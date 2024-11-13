@@ -129,6 +129,10 @@ class SpotAnalysisPipeline:
             self.logger.info("Calculating distances between spots...")
             #thresh_spots_df = spots_df[spots_df['over_thresh']].copy()
             stats_df = self.unmixer.calculate_distances(spots_df, ratios)
+
+            #save stats_df
+            stats_df_csv_name = 'spot_unmixing_stats.csv'
+            stats_df.to_csv(stats_df
             
             # 5. Application of QC filters has been moved to interactive capsule
             #self.logger.info("Applying QC filters...")
