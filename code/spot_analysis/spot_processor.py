@@ -44,5 +44,5 @@ class SpotProcessor:
         
         all_filters = np.all(np.vstack(filters), 0)
         spots_df['valid_spot'] = False
-        spots_df.loc[spots_df[all_filters], 'valid_spot'] = True
+        spots_df.loc[all_filters, 'valid_spot'] = True
         return spots_df
