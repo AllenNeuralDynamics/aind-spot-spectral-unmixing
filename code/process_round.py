@@ -132,14 +132,14 @@ class SpotAnalysisPipeline:
 
             #save stats_df
             stats_df_csv_name = 'spot_unmixing_stats.csv'
-            stats_df.to_csv(stats_df
+            stats_df.to_csv(stats_df_csv_name)
             
             # 5. Application of QC filters has been moved to interactive capsule
-            #self.logger.info("Applying QC filters...")
-            #filtered_spots_df = self.processor.apply_qc_filters(
-            #    thresh_spots_df,
-            #    stats_df
-            #)
+            self.logger.info("Applying QC filters...")
+            spots_df = self.processor.apply_qc_filters(
+                spots_df,
+                stats_df
+            )
             
             #self.logger.info(
             #    f"Kept {len(filtered_spots_df)} spots after QC "
