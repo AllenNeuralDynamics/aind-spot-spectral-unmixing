@@ -57,6 +57,11 @@ class cell_by_gene_processor:
         spots_df['cell_id'] = spots_df['cell_id'].astype('int')
         return spots_df
     
+    def apply_spot_filters(self, spots_df): 
+        """ Only returns the spots with 'valid_spot' column == True """
+
+        return spots_df.loc[spots_df['valid_spot']==True]
+
     def load_segmentation(self, rounds: List[int]) -> pd.DataFrame:
         """Load segmentation data for given rounds"""
         segmentation_df = pd.DataFrame()
@@ -158,8 +163,9 @@ class cell_by_gene_processor:
         """Run the complete processing pipeline"""
         # Process unmixed spots
         unmixed_spots = self.load_spots(rounds, unmixed=True)
+        unmixed_spots_filtered = self.apply_spot_filters(unmixed_spots)
         segmentation = self.load_segmentation(rounds)
-        unmixed_annotations = self.process_cell_annotations(unmixed_spots, segmentation)
+        unmixed_annotations = self.process_cell_annotations(unmixed_spots_filtered, segmentation)
         #filtered_unmixed = self.filter_by_volume(unmixed_annotations)
         
         # Process mixed spots
