@@ -38,7 +38,7 @@ class SpotProcessor:
         """Apply quality control filters"""
         filters = [
             spots_df['dist'] < self.config.CENT_CUTOFF,
-            spots_df['r'] < self.config.CORR_CUTOFF,
+            spots_df['r'] > self.config.CORR_CUTOFF,
             stats_df['dist_r'] > self.config.DIST_CUTOFF
         ]
         
