@@ -45,4 +45,8 @@ class SpotProcessor:
         all_filters = np.all(np.vstack(filters), 0)
         spots_df['valid_spot'] = False
         spots_df.loc[all_filters, 'valid_spot'] = True
+        try: 
+            spots_df['dye_line_dist_ratio'] = stats_df['dist_r']
+        except: 
+            print(f'Failed to add dist_r to spots_df')
         return spots_df
