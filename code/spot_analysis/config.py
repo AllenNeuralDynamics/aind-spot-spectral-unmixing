@@ -298,17 +298,17 @@ class Config:
     @classmethod
     def validate_folder_paths(cls, folder_paths: Dict[str, Dict[str, str]]) -> None:
         """Validates the generated folder paths"""
-        expected_channels = set(cls.get_round_channels().keys())
+        expected_channels = (cls.get_round_channels().keys())
         
         # Validate spots folders
-        spots_channels = set(folder_paths['spots_folders'].keys())
+        spots_channels = (folder_paths['spots_folders'].keys())
         if spots_channels != expected_channels:
             missing = expected_channels - spots_channels
             extra = spots_channels - expected_channels
             print(f"Warning: Mismatch in spots folders. Missing: {missing}, Extra: {extra}")
 
         # Validate multichannel folders
-        multichan_channels = set(folder_paths['multichan_folders'].keys())
+        multichan_channels = (folder_paths['multichan_folders'].keys())
         if multichan_channels != expected_channels:
             missing = expected_channels - multichan_channels
             extra = multichan_channels - expected_channels
@@ -316,9 +316,9 @@ class Config:
 
         for source_channel, targets in folder_paths['multichan_folders'].items():
             expected_targets = expected_channels - {source_channel}
-            if set(targets.keys()) != expected_targets:
-                missing = expected_targets - set(targets.keys())
-                extra = set(targets.keys()) - expected_targets
+            if (targets.keys()) != expected_targets:
+                missing = expected_targets - (targets.keys())
+                extra = (targets.keys()) - expected_targets
                 print(f"Warning: Mismatch in multichannel targets for channel {source_channel}. Missing: {missing}, Extra: {extra}")
 
     @classmethod
