@@ -178,101 +178,118 @@ class Config:
             }
     
 
-    # def get_folder_paths_pipeline(cls) -> dict[str, Dict[str, str]]: 
-    #     """Returns folder paths from what is attached in /data/"""
-
-    #     #this happens a little differently in this function. 
-    #     #first we find the channel names from the names 
-
-    #     multichannel_regex = r"*_ch(\d{1,3})_multichannel/.*_channel_(\d{1,3})_spots_channel_(\d{1,3}).npy"
-    #     spot_regex = r"*_ch(\d{1,3})_spot_intensity/spots.npy"
-
-    #     data_paths = os.listdir(cls.DATA_FOLDER)
-        
-
-    #     for datapath in data_paths:
-    #         groups = re.search(datapath, multichannel_regex)
-            
-    #         #find multichannel numbers
-
-    #         #find spot channels
-
-    #         #Make dictionary for spots_folders, multichan_folders with appropriate channels 
-
-    # @classmethod
-    # def get_folder_paths_pipeline(cls) -> Dict[str, Dict[str, str]]: #get_folder_paths_pipeline
-    #     """Returns folder paths from what is attached in /data/"""
-    #     multichannel_regex = r".*_ch(\d{1,3})_multichannel/.*_channel_(\d{1,3})_spots_channel_(\d{1,3}).npy"
-    #     spot_regex = r"(\d{1,3}).spots.*\/spots.npy"
-    #     # spot_regex = r"(\d{1,3})\/image_data_.*_(\d{1,3})_versus_spots_(\d{1,3})\.csv"
-
-    #     exclude = set(['*.zarr'])
-    #     spots_folders = {}
-    #     multichan_folders = {}
-
-    #     for root, dirs, files in os.walk(cls.DATA_FOLDER):
-    #         # Exclude .zarr directories
-    #         dirs[:] = [d for d in dirs if not d.endswith('.zarr')]
-
-    #         for file in files:
-    #             # Skip files within .zarr directories
-    #             if '.zarr' in root:
-    #                 continue
-    #             full_path = os.path.join(root, file)
-    #             relative_path = os.path.relpath(full_path, cls.DATA_FOLDER)
-
-    #             # Check for spot intensity files
-    #             spot_match = re.match(spot_regex, relative_path)
-    #             if spot_match:
-    #                 channel = spot_match.group(1)
-    #                 spots_folders[channel] = relative_path
-
-    #             # Check for multichannel files
-    #             multichannel_match = re.match(multichannel_regex, relative_path)
-    #             if multichannel_match:
-    #                 source_channel = multichannel_match.group(1)
-    #                 target_channel = multichannel_match.group(3)
-                    
-    #                 if source_channel not in multichan_folders:
-    #                     multichan_folders[source_channel] = {}
-                    
-    #                 multichan_folders[source_channel][target_channel] = relative_path
-
-    #     return {
-    #         'spots_folders': spots_folders,
-    #         'multichan_folders': multichan_folders
-    #     }
+    
     @classmethod
-    def get_folder_paths_pipeline(cls) -> Dict[str, Dict[str, str]]: #get_folder_paths_pipeline
+    def _find_stats_files(cls, path: pathlib.Path) -> Dict[str, List[Dict[str, str]]]:
+        """
+        Find all stats files in the given path, handling both traditional and tile-based formats.
+        Returns a dictionary mapping source channels to lists of target channel files.
+        """
+        stats_files = {}
+        
+        # Define patterns for both folder structures
+        folder_patterns = [
+            # Traditional format: channel_561_stats
+            r'.*(?:channel|ch)_(\d+)_stats',
+            # Tile format: Tile_X_0000_Y_0000_Z_0000_ch_561_stats
+            r'.*Tile_.*_ch_(\d+)_stats'
+        ]
+        
+        # Pattern for CSV files inside stats folders
+        csv_pattern = r'image_data_channel_(\d+)_versus_spots_(\d+)\.csv'
+        
+        for root, dirs, files in os.walk(path):
+            # Skip .zarr directories
+            if '.zarr' in root:
+                continue
+                
+            # Check if current directory is a stats directory
+            current_dir = os.path.basename(root)
+            source_channel = None
+            
+            # Try to match the directory name against our patterns
+            for pattern in folder_patterns:
+                match = re.match(pattern, current_dir)
+                if match:
+                    source_channel = match.group(1)
+                    break
+            
+            if source_channel:
+                # Look for CSV files in this directory
+                for file in files:
+                    csv_match = re.match(csv_pattern, file)
+                    if csv_match:
+                        wavelength_a = csv_match.group(1)
+                        wavelength_b = csv_match.group(2)
+                        
+                        if source_channel not in stats_files:
+                            stats_files[source_channel] = []
+                            
+                        stats_files[source_channel].append({
+                            'path': os.path.relpath(os.path.join(root, file), path),
+                            'source_wavelength': wavelength_a,
+                            'target_wavelength': wavelength_b
+                        })
+        
+        return stats_files
+
+    @classmethod
+    def _find_spots_files(cls, path: pathlib.Path) -> Dict[str, str]:
+        """
+        Find all spots files in the given path, handling both traditional and tile-based formats.
+        Returns a dictionary mapping channel numbers to file paths.
+        """
+        spots_files = {}
+        
+        # Define patterns for spots folders
+        patterns = [
+            # Traditional format: channel_561_spots/spots.npy
+            (r'.*(?:channel|ch)_(\d+)_spots', r'spots\.npy$'),
+            # Tile format: Tile_X_0000_Y_0000_Z_0000_ch_561_spots/spots.npy
+            (r'.*Tile_.*_ch_(\d+)_spots', r'spots\.npy$')
+        ]
+        
+        for root, _, files in os.walk(path):
+            if '.zarr' in root:
+                continue
+                
+            current_dir = os.path.basename(root)
+            
+            for folder_pattern, file_pattern in patterns:
+                folder_match = re.match(folder_pattern, current_dir)
+                if folder_match:
+                    channel = folder_match.group(1)
+                    # Look for spots.npy file
+                    for file in files:
+                        if re.search(file_pattern, file):
+                            spots_files[channel] = os.path.relpath(
+                                os.path.join(root, file), path)
+                            break
+        
+        return spots_files
+
+    @classmethod
+    def get_folder_paths_pipeline(cls) -> Dict[str, Dict[str, str]]:
         """Returns folder paths from what is attached in /data/"""
-        spot_regex = r".*(\d{1,3})_stats\/image_data_.*_(\d{1,3})_versus_spots_(\d{1,3})\.csv"
-        exclude = set(['*.zarr'])
-        spots_folders = {}
+        # Find spots files
+        spots_folders = cls._find_spots_files(cls.DATA_FOLDER)
+        
+        # Find stats files
+        stats_files = cls._find_stats_files(cls.DATA_FOLDER)
+        
+        # Process stats files into multichannel format
         multichan_folders = {}
-
-        for root, dirs, files in os.walk(cls.DATA_FOLDER):
-            # Exclude .zarr directories
-            dirs[:] = [d for d in dirs if not d.endswith('.zarr')]
-            for file in files:
-                # Skip files within .zarr directories
-                if '.zarr' in root:
-                    continue
-                full_path = os.path.join(root, file)
-                relative_path = os.path.relpath(full_path, cls.DATA_FOLDER)
-
-                # Check for spot intensity files
-                spot_match = re.match(spot_regex, relative_path)
-                if spot_match:
-                    source_channel = spot_match.group(2)
-                    target_channel = spot_match.group(3)
-
-                    if source_channel == target_channel: 
-                        spots_folders[source_channel] = relative_path
-                    else:
-                        if multichan_folders == {} or source_channel not in multichan_folders.keys():
-                            multichan_folders[source_channel]= {target_channel: relative_path}
-                        else: 
-                            multichan_folders[source_channel][target_channel] = relative_path
+        for source_channel, file_list in stats_files.items():
+            if source_channel not in multichan_folders:
+                multichan_folders[source_channel] = {}
+                
+            for file_info in file_list:
+                # Only use files where source_wavelength matches the folder's channel
+                if file_info['source_wavelength'] == source_channel:
+                    target_channel = file_info['target_wavelength']
+                    if target_channel != source_channel:
+                        multichan_folders[source_channel][target_channel] = file_info['path']
+                        
         return {
             'spots_folders': spots_folders,
             'multichan_folders': multichan_folders
@@ -307,10 +324,8 @@ class Config:
     @classmethod
     def get_and_validate_folder_paths(cls) -> Dict[str, Dict[str, str]]:
         """Gets folder paths and validates them"""
-        if cls.folder_paths == None: 
+        if cls.folder_paths is None: 
             folder_paths = cls.get_folder_paths_pipeline()
             cls.validate_folder_paths(folder_paths)
             cls.folder_paths = folder_paths
-        else: 
-            return cls.folder_paths
-        
+        return cls.folder_paths
