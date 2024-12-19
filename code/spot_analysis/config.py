@@ -202,31 +202,35 @@ class Config:
 
     @classmethod
     def _find_spots_files(cls, path: pathlib.Path) -> Dict[str, str]:
-        """Find all spots files in the given path"""
+        """Find all spots files (spots.csv or spots.npy) in *_spots folders"""
         spots_files = {}
         expected_channels = set(str(ch) for ch in cls.manifest.get('spot_channels', []))
-        print(f"\nDebug: Walking directory {path} looking for spot files")
+
+        # Pattern for spots folders (both traditional and tile format)
+        folder_patterns = [
+            r'.*(\d{1,3})_spots$',  # Matches both ch_ and channel_
+        ]
         
         for root, dirs, files in os.walk(path):
             if '.zarr' in root:
                 continue
                 
-            print(f"\nDebug: Examining directory: {root}")
-            print(f"Debug: Found directories: {dirs}")
-            print(f"Debug: Found files: {files}")
-                
-            for file in files:
-                if file.endswith('.csv'):
-                    file_path = os.path.relpath(os.path.join(root, file), path)
-                    
-                    # Check if this is a self-versus file (indicating spots data)
-                    csv_match = re.search(r'channel_(\d+)_versus_spots_(\d+)\.csv', file)
-                    if csv_match and csv_match.group(1) == csv_match.group(2):
-                        channel = csv_match.group(1)
-                        if channel in expected_channels:
-                            spots_files[channel] = file_path
+            current_dir = os.path.basename(root)
+            
+            # Check if this is a spots directory
+            for pattern in folder_patterns:
+                match = re.match(pattern, current_dir)
+                if match:
+                    channel = match.group(1)
+                    if channel in expected_channels:
+                        # Look for spots file
+                        for file in files:
+                            if file in ['spots.csv']:
+                                spots_files[channel] = os.path.relpath(
+                                    os.path.join(root, file), path)
+                                break
         
-        print(f"Found spots files: {spots_files}")
+        print(f"\nDebug: Found spots files: {spots_files}")
         return spots_files
 
     @classmethod
