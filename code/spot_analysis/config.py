@@ -64,31 +64,31 @@ class Config:
 
         
 
-    @classmethod
-    def _load_manifest(cls):
-        """Load the processing manifest JSON file"""
+    #@classmethod
+    #def _load_manifest(cls):
+    #    """Load the processing manifest JSON file"""
 
         # manifest_path = pathlib.Path(cls.dataset_name) / 'derived' / 'processing_manifest.json'
-        manifest_path = list(pathlib.Path(cls.DATA_FOLDER).glob("derived/processing_manifest.json"))
+    #    manifest_path = list(pathlib.Path(cls.DATA_FOLDER).glob("derived/processing_manifest.json"))
         
     
-        if not len(manifest_path):
-            print(f'didnt find pipeline processing manifest')
+    #    if not len(manifest_path):
+    #        print(f'didnt find pipeline processing manifest')
             #raise FileNotFoundError("No processing_manifest.json was found!")
         
-            manifest_path = list(pathlib.Path(cls.DATA_FOLDER).glob("*/derived/processing_manifest.json"))
-            if not len(manifest_path):
-                raise FileNotFoundError("No capsule processing_manifest.json was found!")
+    #        manifest_path = list(pathlib.Path(cls.DATA_FOLDER).glob("*/derived/processing_manifest.json"))
+    #        if not len(manifest_path):
+    #            raise FileNotFoundError("No capsule processing_manifest.json was found!")
 
         
-        print(f'Manifest_path {manifest_path}')
+    #    print(f'Manifest_path {manifest_path}')
 
-        try:
-            with open(manifest_path[0], 'r') as f:
-                cls.manifest = json.load(f)
-        except FileNotFoundError:
-            cls.manifest = None
-            raise FileNotFoundError(f"Processing manifest not found at {manifest_path}")
+    #    try:
+    #        with open(manifest_path[0], 'r') as f:
+    #            cls.manifest = json.load(f)
+    #    except FileNotFoundError:
+    #        cls.manifest = None
+    #        raise FileNotFoundError(f"Processing manifest not found at {manifest_path}")
 
     @classmethod
     def _update_round_from_manifest(cls):
@@ -137,140 +137,95 @@ class Config:
     @classmethod
     def get_folder_paths(cls) -> Dict[str, Dict[str, str]]:
         return cls.get_and_validate_folder_paths()
+
     
     @classmethod
-    def get_folder_paths_manual(cls) -> Dict[str, Dict[str, str]]:
-        """Returns folder paths based on round number"""
-        if cls.ROUND_N == 0:
-            return {
-                'spots_folders': {
-                    '1': 'HCR_BL6-000-R0_ch1_spot_intensity/spots.npy',
-                    '2': 'HCR_BL6-000-R0_ch2_spot_intensity/spots.npy',
-                    '4': 'HCR_BL6-000-R0_ch4_spot_intensity/spots.npy'
-                },
-                'multichan_folders' : {'1':{'2':'HCR_BL6-000-R0_ch1_multichannel/ch_channel_4_spots_channel_2.npy',
-                              '4':'HCR_BL6-000-R0_ch1_multichannel/ch_channel_4_spots_channel_4.npy'},
-                         '2':{'1':'HCR_BL6-000-R0_ch2_multichannel/ch_channel_4_spots_channel_1.npy',
-                              '4':'HCR_BL6-000-R0_ch2_multichannel/ch_channel_4_spots_channel_4.npy'},
-                         '4':{'1':'HCR_BL6-000-R0_ch4_multichannel/ch_channel_4_spots_channel_1.npy',
-                              '2':'HCR_BL6-000-R0_ch4_multichannel/ch_channel_4_spots_channel_2.npy'}}
-            }
+    def _load_manifest(cls):
+        """Load the processing manifest JSON file"""
+        manifest_path = list(pathlib.Path(cls.DATA_FOLDER).glob("derived/processing_manifest.json"))
+        
+        if not len(manifest_path):
+            print('Didn\'t find pipeline processing manifest')
+            manifest_path = list(pathlib.Path(cls.DATA_FOLDER).glob("*/derived/processing_manifest.json"))
+            if not len(manifest_path):
+                raise FileNotFoundError("No capsule processing_manifest.json was found!")
 
-        if cls.ROUND_N == 13:
-            return {
-                    'spots_folders':{'1':'HCR_BL6-000-R13_ch1_spot_intensity/spots.npy',
-                                        '2':'HCR_BL6-000-R13_ch2_spot_intensity/spots.npy',
-                                        '3':'HCR_BL6-000-R13_ch3_spot_intensity/spots.npy',
-                                        '4':'HCR_BL6-000-R13_ch4_spot_intensity/spots.npy'},
-                    'multichan_folders': 
-                        {'1':{'2':'HCR_BL6-000-R13_ch1_multichannel/ch_channel_4_spots_channel_2.npy',
-                              '3':'HCR_BL6-000-R13_ch1_multichannel/ch_channel_4_spots_channel_3.npy',
-                              '4':'HCR_BL6-000-R13_ch1_multichannel/ch_channel_4_spots_channel_4.npy'},
-                         '2':{'1':'HCR_BL6-000-R13_ch2_multichannel/ch_channel_4_spots_channel_1.npy',
-                              '3':'HCR_BL6-000-R13_ch2_multichannel/ch_channel_4_spots_channel_3.npy',
-                              '4':'HCR_BL6-000-R13_ch2_multichannel/ch_channel_4_spots_channel_4.npy'},
-                         '3':{'1':'HCR_BL6-000-R13_ch3_multichannel/ch_channel_4_spots_channel_1.npy',
-                              '2':'HCR_BL6-000-R13_ch3_multichannel/ch_channel_4_spots_channel_2.npy',
-                              '4':'HCR_BL6-000-R13_ch3_multichannel/ch_channel_4_spots_channel_4.npy'},
-                         '4':{'1':'HCR_BL6-000-R13_ch4_multichannel/ch_channel_4_spots_channel_1.npy',
-                              '2':'HCR_BL6-000-R13_ch4_multichannel/ch_channel_4_spots_channel_2.npy',
-                              '3':'HCR_BL6-000-R13_ch4_multichannel/ch_channel_4_spots_channel_3.npy',}}
-            }
-    
+        print(f'Manifest_path {manifest_path}')
 
-    
+        try:
+            with open(manifest_path[0], 'r') as f:
+                cls.manifest = json.load(f)
+                print(f"Loaded manifest with channels: {cls.manifest.get('spot_channels', [])}")
+        except FileNotFoundError:
+            cls.manifest = None
+            raise FileNotFoundError(f"Processing manifest not found at {manifest_path}")
+
     @classmethod
     def _find_stats_files(cls, path: pathlib.Path) -> Dict[str, List[Dict[str, str]]]:
-        """
-        Find all stats files in the given path, handling both traditional and tile-based formats.
-        Returns a dictionary mapping source channels to lists of target channel files.
-        """
+        """Find all stats files in the given path"""
         stats_files = {}
-        
-        # Define patterns for both folder structures
-        folder_patterns = [
-            # Traditional format: channel_561_stats
-            r'.*(?:channel|ch)_(\d+)_stats',
-            # Tile format: Tile_X_0000_Y_0000_Z_0000_ch_561_stats
-            r'.*Tile_.*_ch_(\d+)_stats'
-        ]
-        
-        # Pattern for CSV files inside stats folders
-        csv_pattern = r'image_data_channel_(\d+)_versus_spots_(\d+)\.csv'
-        
-        for root, dirs, files in os.walk(path):
-            # Skip .zarr directories
-            if '.zarr' in root:
-                continue
-                
-            # Check if current directory is a stats directory
-            current_dir = os.path.basename(root)
-            source_channel = None
-            
-            # Try to match the directory name against our patterns
-            for pattern in folder_patterns:
-                match = re.match(pattern, current_dir)
-                if match:
-                    source_channel = match.group(1)
-                    break
-            
-            if source_channel:
-                # Look for CSV files in this directory
-                for file in files:
-                    csv_match = re.match(csv_pattern, file)
-                    if csv_match:
-                        wavelength_a = csv_match.group(1)
-                        wavelength_b = csv_match.group(2)
-                        
-                        if source_channel not in stats_files:
-                            stats_files[source_channel] = []
-                            
-                        stats_files[source_channel].append({
-                            'path': os.path.relpath(os.path.join(root, file), path),
-                            'source_wavelength': wavelength_a,
-                            'target_wavelength': wavelength_b
-                        })
-        
-        return stats_files
-
-    @classmethod
-    def _find_spots_files(cls, path: pathlib.Path) -> Dict[str, str]:
-        """
-        Find all spots files in the given path, handling both traditional and tile-based formats.
-        Returns a dictionary mapping channel numbers to file paths.
-        """
-        spots_files = {}
-        
-        # Define patterns for spots folders
-        patterns = [
-            # Traditional format: channel_561_spots/spots.npy
-            (r'.*(?:channel|ch)_(\d+)_spots', r'spots\.npy$'),
-            # Tile format: Tile_X_0000_Y_0000_Z_0000_ch_561_spots/spots.npy
-            (r'.*Tile_.*_ch_(\d+)_spots', r'spots\.npy$')
-        ]
+        expected_channels = set(str(ch) for ch in cls.manifest.get('spot_channels', []))
         
         for root, _, files in os.walk(path):
             if '.zarr' in root:
                 continue
                 
-            current_dir = os.path.basename(root)
-            
-            for folder_pattern, file_pattern in patterns:
-                folder_match = re.match(folder_pattern, current_dir)
-                if folder_match:
-                    channel = folder_match.group(1)
-                    # Look for spots.npy file
-                    for file in files:
-                        if re.search(file_pattern, file):
-                            spots_files[channel] = os.path.relpath(
-                                os.path.join(root, file), path)
-                            break
+            # Look for CSV files
+            for file in files:
+                if file.endswith('.csv'):
+                    # Try to extract channel information from the file path and name
+                    file_path = os.path.relpath(os.path.join(root, file), path)
+                    
+                    # Extract channel numbers from the CSV filename
+                    csv_match = re.search(r'channel_(\d+)_versus_spots_(\d+)\.csv', file)
+                    if csv_match:
+                        source_channel = csv_match.group(1)
+                        target_channel = csv_match.group(2)
+                        
+                        if source_channel in expected_channels:
+                            if source_channel not in stats_files:
+                                stats_files[source_channel] = []
+                            
+                            stats_files[source_channel].append({
+                                'path': file_path,
+                                'source_wavelength': source_channel,
+                                'target_wavelength': target_channel
+                            })
         
+        print(f"Found stats files: {stats_files}")
+        return stats_files
+
+    @classmethod
+    def _find_spots_files(cls, path: pathlib.Path) -> Dict[str, str]:
+        """Find all spots files in the given path"""
+        spots_files = {}
+        expected_channels = set(str(ch) for ch in cls.manifest.get('spot_channels', []))
+        
+        for root, _, files in os.walk(path):
+            if '.zarr' in root:
+                continue
+                
+            for file in files:
+                if file.endswith('.csv'):
+                    file_path = os.path.relpath(os.path.join(root, file), path)
+                    
+                    # Check if this is a self-versus file (indicating spots data)
+                    csv_match = re.search(r'channel_(\d+)_versus_spots_(\d+)\.csv', file)
+                    if csv_match and csv_match.group(1) == csv_match.group(2):
+                        channel = csv_match.group(1)
+                        if channel in expected_channels:
+                            spots_files[channel] = file_path
+        
+        print(f"Found spots files: {spots_files}")
         return spots_files
 
     @classmethod
     def get_folder_paths_pipeline(cls) -> Dict[str, Dict[str, str]]:
         """Returns folder paths from what is attached in /data/"""
+        # Ensure manifest is loaded
+        if cls.manifest is None:
+            cls._load_manifest()
+        
         # Find spots files
         spots_folders = cls._find_spots_files(cls.DATA_FOLDER)
         
@@ -284,12 +239,15 @@ class Config:
                 multichan_folders[source_channel] = {}
                 
             for file_info in file_list:
-                # Only use files where source_wavelength matches the folder's channel
                 if file_info['source_wavelength'] == source_channel:
                     target_channel = file_info['target_wavelength']
                     if target_channel != source_channel:
                         multichan_folders[source_channel][target_channel] = file_info['path']
-                        
+        
+        print(f"Final folder paths:")
+        print(f"Spots folders: {spots_folders}")
+        print(f"Multichannel folders: {multichan_folders}")
+        
         return {
             'spots_folders': spots_folders,
             'multichan_folders': multichan_folders
@@ -298,7 +256,11 @@ class Config:
     @classmethod
     def validate_folder_paths(cls, folder_paths: Dict[str, Dict[str, str]]) -> None:
         """Validates the generated folder paths"""
-        expected_channels = set(cls.get_round_channels().keys())
+        if cls.manifest is None:
+            cls._load_manifest()
+            
+        expected_channels = set(str(ch) for ch in cls.manifest.get('spot_channels', []))
+        print(f"Expected channels from manifest: {expected_channels}")
         
         # Validate spots folders
         spots_channels = set(folder_paths['spots_folders'].keys())
