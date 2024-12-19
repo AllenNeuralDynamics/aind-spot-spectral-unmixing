@@ -165,10 +165,15 @@ class Config:
         """Find all stats files in the given path"""
         stats_files = {}
         expected_channels = set(str(ch) for ch in cls.manifest.get('spot_channels', []))
+        print(f"\nDebug: Walking directory {path} looking for stats files")
         
-        for root, _, files in os.walk(path):
+        for root, dirs, files in os.walk(path):
             if '.zarr' in root:
                 continue
+                
+            print(f"\nDebug: Examining directory: {root}")
+            print(f"Debug: Found directories: {dirs}")
+            print(f"Debug: Found files: {files}")
                 
             # Look for CSV files
             for file in files:
@@ -200,10 +205,15 @@ class Config:
         """Find all spots files in the given path"""
         spots_files = {}
         expected_channels = set(str(ch) for ch in cls.manifest.get('spot_channels', []))
+        print(f"\nDebug: Walking directory {path} looking for spot files")
         
-        for root, _, files in os.walk(path):
+        for root, dirs, files in os.walk(path):
             if '.zarr' in root:
                 continue
+                
+            print(f"\nDebug: Examining directory: {root}")
+            print(f"Debug: Found directories: {dirs}")
+            print(f"Debug: Found files: {files}")
                 
             for file in files:
                 if file.endswith('.csv'):
