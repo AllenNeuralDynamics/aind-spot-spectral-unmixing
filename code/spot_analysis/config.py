@@ -183,14 +183,11 @@ class Config:
                     source_channel = spot_match.group(2)
                     target_channel = spot_match.group(3)
 
-                    if source_channel == target_channel: 
-                        spots_folders[source_channel] = relative_path
-                    else:
-                        if multichan_folders == {} or source_channel not in multichan_folders.keys():
-                            multichan_folders[source_channel]= {target_channel: relative_path}
-                        else: 
-                            multichan_folders[source_channel][target_channel] = relative_path
-        
+                    if multichan_folders == {} or source_channel not in multichan_folders.keys():
+                        multichan_folders[source_channel]= {target_channel: relative_path}
+                    else: 
+                        multichan_folders[source_channel][target_channel] = relative_path
+    
         print(f"Found stats files: {multichan_folders}")
         return multichan_folders
 
