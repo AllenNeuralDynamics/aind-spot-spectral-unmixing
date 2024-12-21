@@ -163,73 +163,59 @@ class Config:
     @classmethod
     def _find_stats_files(cls, path: pathlib.Path) -> Dict[str, List[Dict[str, str]]]:
         """Find all stats files in the given path"""
-        stats_files = {}
-        expected_channels = set(str(ch) for ch in cls.manifest.get('spot_channels', []))
-        print(f"\nDebug: Walking directory {path} looking for stats files")
-        
-        for root, dirs, files in os.walk(path):
-            if '.zarr' in root:
-                continue
-                
-            print(f"\nDebug: Examining directory: {root}")
-            print(f"Debug: Found directories: {dirs}")
-            print(f"Debug: Found files: {files}")
-                
-            # Look for CSV files
+        spot_regex = r".*(\d{1,3})_stats\/image_data_.*_(\d{1,3})_versus_spots_(\d{1,3})\.csv"
+        exclude = set(['*.zarr'])
+        multichan_folders = {}
+
+        for root, dirs, files in os.walk(cls.DATA_FOLDER):
+            # Exclude .zarr directories
+            dirs[:] = [d for d in dirs if not d.endswith('.zarr')]
             for file in files:
-                if file.endswith('.csv'):
-                    # Try to extract channel information from the file path and name
-                    file_path = os.path.relpath(os.path.join(root, file), path)
-                    
-                    # Extract channel numbers from the CSV filename
-                    csv_match = re.search(r'channel_(\d+)_versus_spots_(\d+)\.csv', file)
-                    if csv_match:
-                        source_channel = csv_match.group(1)
-                        target_channel = csv_match.group(2)
-                        
-                        if source_channel in expected_channels:
-                            if source_channel not in stats_files:
-                                stats_files[source_channel] = []
-                            
-                            stats_files[source_channel].append({
-                                'path': file_path,
-                                'source_wavelength': source_channel,
-                                'target_wavelength': target_channel
-                            })
+                # Skip files within .zarr directories
+                if '.zarr' in root:
+                    continue
+                full_path = os.path.join(root, file)
+                relative_path = os.path.relpath(full_path, cls.DATA_FOLDER)
+
+                # Check for spot intensity files
+                spot_match = re.match(spot_regex, relative_path)
+                if spot_match:
+                    source_channel = spot_match.group(2)
+                    target_channel = spot_match.group(3)
+
+                    if source_channel == target_channel: 
+                        spots_folders[source_channel] = relative_path
+                    else:
+                        if multichan_folders == {} or source_channel not in multichan_folders.keys():
+                            multichan_folders[source_channel]= {target_channel: relative_path}
+                        else: 
+                            multichan_folders[source_channel][target_channel] = relative_path
         
-        print(f"Found stats files: {stats_files}")
-        return stats_files
+        print(f"Found stats files: {multichan_folders}")
+        return multichan_folders
 
     @classmethod
+    
     def _find_spots_files(cls, path: pathlib.Path) -> Dict[str, str]:
         """Find all spots files (spots.csv or spots.npy) in *_spots folders"""
         spots_files = {}
         expected_channels = set(str(ch) for ch in cls.manifest.get('spot_channels', []))
-
-        # Pattern for spots folders (both traditional and tile format)
-        folder_patterns = [
-            r'.*(\d{1,3})_spots$',  # Matches both ch_ and channel_
-        ]
         
+        # Look for Tile format spots folders
         for root, dirs, files in os.walk(path):
-            if '.zarr' in root:
+            if '.zarr' in root or 'precomputed' in root:
                 continue
-                
-            current_dir = os.path.basename(root)
             
-            # Check if this is a spots directory
-            for pattern in folder_patterns:
-                match = re.match(pattern, current_dir)
-                if match:
-                    channel = match.group(1)
-                    if channel in expected_channels:
-                        # Look for spots file
-                        for file in files:
-                            if file in ['spots.csv']:
-                                spots_files[channel] = os.path.relpath(
-                                    os.path.join(root, file), path)
-                                break
-        
+            # Extract channel number from folder path
+            channel_match = re.search(r'ch_(\d+)_spots', root)
+            if channel_match:
+                channel = channel_match.group(1)
+                if channel in expected_channels:
+                    # Prioritize spots.csv over spots.npy if both exist
+                    if 'spots.csv' in files:
+                        spots_files[channel] = os.path.relpath(os.path.join(root, 'spots.csv'), path)
+
+                
         print(f"\nDebug: Found spots files: {spots_files}")
         return spots_files
 
