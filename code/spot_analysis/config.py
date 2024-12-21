@@ -161,10 +161,11 @@ class Config:
             raise FileNotFoundError(f"Processing manifest not found at {manifest_path}")
 
     @classmethod
-    def _find_stats_files(cls, path: pathlib.Path) -> Dict[str, List[Dict[str, str]]]:
-        """Find all stats files in the given path"""
+    def get_folder_paths_pipeline(cls) -> Dict[str, Dict[str, str]]: #get_folder_paths_pipeline
+        """Returns folder paths from what is attached in /data/"""
         spot_regex = r".*(\d{1,3})_stats\/image_data_.*_(\d{1,3})_versus_spots_(\d{1,3})\.csv"
         exclude = set(['*.zarr'])
+        spots_folders = {}
         multichan_folders = {}
 
         for root, dirs, files in os.walk(cls.DATA_FOLDER):
@@ -183,68 +184,13 @@ class Config:
                     source_channel = spot_match.group(2)
                     target_channel = spot_match.group(3)
 
-                    if multichan_folders == {} or source_channel not in multichan_folders.keys():
-                        multichan_folders[source_channel]= {target_channel: relative_path}
-                    else: 
-                        multichan_folders[source_channel][target_channel] = relative_path
-    
-        print(f"Found stats files: {multichan_folders}")
-        return multichan_folders
-
-    @classmethod
-    
-    def _find_spots_files(cls, path: pathlib.Path) -> Dict[str, str]:
-        """Find all spots files (spots.csv or spots.npy) in *_spots folders"""
-        spots_files = {}
-        expected_channels = set(str(ch) for ch in cls.manifest.get('spot_channels', []))
-        
-        # Look for Tile format spots folders
-        for root, dirs, files in os.walk(path):
-            if '.zarr' in root or 'precomputed' in root:
-                continue
-            
-            # Extract channel number from folder path
-            channel_match = re.search(r'ch_(\d+)_spots', root)
-            if channel_match:
-                channel = channel_match.group(1)
-                if channel in expected_channels:
-                    # Prioritize spots.csv over spots.npy if both exist
-                    if 'spots.csv' in files:
-                        spots_files[channel] = os.path.relpath(os.path.join(root, 'spots.csv'), path)
-
-                
-        print(f"\nDebug: Found spots files: {spots_files}")
-        return spots_files
-
-    @classmethod
-    def get_folder_paths_pipeline(cls) -> Dict[str, Dict[str, str]]:
-        """Returns folder paths from what is attached in /data/"""
-        # Ensure manifest is loaded
-        if cls.manifest is None:
-            cls._load_manifest()
-        
-        # Find spots files
-        spots_folders = cls._find_spots_files(cls.DATA_FOLDER)
-        
-        # Find stats files
-        stats_files = cls._find_stats_files(cls.DATA_FOLDER)
-        
-        # Process stats files into multichannel format
-        multichan_folders = {}
-        for source_channel, file_list in stats_files.items():
-            if source_channel not in multichan_folders:
-                multichan_folders[source_channel] = {}
-                
-            for file_info in file_list:
-                if file_info['source_wavelength'] == source_channel:
-                    target_channel = file_info['target_wavelength']
-                    if target_channel != source_channel:
-                        multichan_folders[source_channel][target_channel] = file_info['path']
-        
-        print(f"Final folder paths:")
-        print(f"Spots folders: {spots_folders}")
-        print(f"Multichannel folders: {multichan_folders}")
-        
+                    if source_channel == target_channel: 
+                        spots_folders[source_channel] = relative_path
+                    else:
+                        if multichan_folders == {} or source_channel not in multichan_folders.keys():
+                            multichan_folders[source_channel]= {target_channel: relative_path}
+                        else: 
+                            multichan_folders[source_channel][target_channel] = relative_path
         return {
             'spots_folders': spots_folders,
             'multichan_folders': multichan_folders
@@ -253,11 +199,7 @@ class Config:
     @classmethod
     def validate_folder_paths(cls, folder_paths: Dict[str, Dict[str, str]]) -> None:
         """Validates the generated folder paths"""
-        if cls.manifest is None:
-            cls._load_manifest()
-            
-        expected_channels = set(str(ch) for ch in cls.manifest.get('spot_channels', []))
-        print(f"Expected channels from manifest: {expected_channels}")
+        expected_channels = set(cls.get_round_channels().keys())
         
         # Validate spots folders
         spots_channels = set(folder_paths['spots_folders'].keys())
@@ -283,8 +225,10 @@ class Config:
     @classmethod
     def get_and_validate_folder_paths(cls) -> Dict[str, Dict[str, str]]:
         """Gets folder paths and validates them"""
-        if cls.folder_paths is None: 
+        if cls.folder_paths == None: 
             folder_paths = cls.get_folder_paths_pipeline()
             cls.validate_folder_paths(folder_paths)
             cls.folder_paths = folder_paths
-        return cls.folder_paths
+        else: 
+            return cls.folder_paths
+        
