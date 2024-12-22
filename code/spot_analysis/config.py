@@ -129,6 +129,7 @@ class Config:
     def get_round_channels(cls) -> Dict[str, str]:
         return cls.GENE_DICT[str(cls.ROUND_N)]
         
+        
     @classmethod
     def get_round_spot_channels(cls) -> Dict[str, str]:
         spot_channels = cls.manifest['spot_channels']
@@ -227,6 +228,8 @@ class Config:
         """Gets folder paths and validates them"""
         if cls.folder_paths == None: 
             folder_paths = cls.get_folder_paths_pipeline()
+            print(f'folder_paths {folder_paths}')
+
             cls.validate_folder_paths(folder_paths)
             cls.folder_paths = folder_paths
         else: 

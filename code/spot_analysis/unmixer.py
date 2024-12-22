@@ -164,6 +164,7 @@ class SpotUnmixer:
         
         # Process each channel
         for idx, channel in enumerate(self.config.get_round_spot_channels()):
+            channel = str(channel)
             gene = self.config.get_round_channels()[channel]
             
             # Process spots for this channel
