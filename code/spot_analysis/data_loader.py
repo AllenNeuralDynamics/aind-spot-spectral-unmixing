@@ -90,7 +90,7 @@ class SpotDataLoader:
 
 
         channels = self.config.get_round_spot_channels()
-        channels = [i for i in list(channels) if i!= '405']
+        channels = [str(i) for i in list(channels) if i!= '405']
 
         round_n = self.config.ROUND_N
         multichan_folders = self.config.get_folder_paths()['multichan_folders']
