@@ -122,6 +122,8 @@ class RatioCalculator:
             # initial = np.random.rand(n_cam, n_dye) # for checking that initialized performance is much better than with random lines
             r_gpu = torch.from_numpy(initial).cuda(0).requires_grad_()
             thresh_spots_df_subsetted = self.subset_spots_df(intensity_data)
+            if thresh_spots_df_subsetted.shape[0] < self.config.N_SUBSET:
+                self.config.N_SUBSET = thresh_spots_df_subsetted.shape[0]
             data_gpu = torch.from_numpy(np.array(thresh_spots_df_subsetted)).cuda(0).double()
 
             loss_hist = torch.zeros(self.config.EPOCHS)
