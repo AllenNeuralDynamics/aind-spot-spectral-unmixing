@@ -20,8 +20,8 @@ class Config:
     
     # Demixing parameters
     FRAC_SAMPLED = 0.2
-    N_SUBSET = 80000
-    EPOCHS = 10000
+    N_SUBSET = 10000
+    EPOCHS = 50000
     RESAMPLE_ITER = 50
     L1 = 0
     LEARNING_RATE = 1e-9
