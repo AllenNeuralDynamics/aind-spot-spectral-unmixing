@@ -80,7 +80,7 @@ class SpotUnmixer:
         # Process spatial matches
         for a, b in spatial_matches:
             # Skip if spots are from different cells
-            if spots.iloc[a]['spot_id'] != spots.iloc[b]['spot_id']:
+            if spots.iloc[a]['cell_id'] != spots.iloc[b]['cell_id']:
                 continue
                 
             # Skip if either point is already removed

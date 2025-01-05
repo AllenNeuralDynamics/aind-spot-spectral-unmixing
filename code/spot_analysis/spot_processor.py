@@ -36,17 +36,25 @@ class SpotProcessor:
     
     def apply_qc_filters(self, spots_df: pd.DataFrame, stats_df: pd.DataFrame) -> pd.DataFrame:
         """Apply quality control filters"""
-        filters = [
+
+        spots_df['valid_spot'] = False
+        spots_df = spots_df.copy()
+        stats_df = stats_df.copy()
+
+        spots_df = spots_df.reset_index(drop = True)
+        stats_df = stats_df.reset_index(drop = True)
+
+        filters = (
             spots_df['dist'] < self.config.CENT_CUTOFF,
             spots_df['r'] > self.config.CORR_CUTOFF,
             stats_df['dist_r'] > self.config.DIST_CUTOFF
-        ]
+        )
         
         all_filters = np.all(np.vstack(filters), 0)
-        spots_df['valid_spot'] = False
+        
         spots_df.loc[all_filters, 'valid_spot'] = True
         try: 
-            spots_df['dye_line_dist_ratio'] = stats_df['dist_r']
+            spots_df['dye_line_dist_ratio'] = stats_df.loc[spots_df.index, 'dist_r']
         except: 
             print(f'Failed to add dist_r to spots_df')
         return spots_df
