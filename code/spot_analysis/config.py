@@ -16,11 +16,11 @@ class Config:
     # Processing parameters
     _default_ROUND_N = 0
     MIN_DISTS = 5
-    PERCENTILE = 90
+    PERCENTILE = 99
     
     # Demixing parameters
-    FRAC_SAMPLED = 0.2
-    N_SUBSET = 80000
+    FRAC_SAMPLED = 0.1
+    N_SUBSET = 100000
     EPOCHS = 10000
     RESAMPLE_ITER = 50
     L1 = 0

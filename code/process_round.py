@@ -95,7 +95,7 @@ class SpotAnalysisPipeline:
             # 2. Calculate intensities and apply threshold filtering
             self.logger.info("Processing spots...")
             spots_df = self.processor.calculate_intensities(spots_df)
-            spots_df, spots_over_thresh = self.processor.filter_by_threshold(spots_df)
+            spots_df, spots_over_thresh = self.processor.new_filter_by_threshold(spots_df)
             
             self.logger.info(
                 f"Found {len(spots_over_thresh)} spots over threshold "
@@ -120,11 +120,16 @@ class SpotAnalysisPipeline:
                 f'chan_{ch}_intensity'
                 for ch in Config.get_round_spot_channels()
             ]
-            ratios = self.ratio_calculator.calculate_ratios(
+            # ratios = self.ratio_calculator.calculate_ratios( #tim's old way
+            #     spots_df[intensity_cols].values,
+            #     ratio_path
+            # )
+            ratios = self.ratio_calculator.calculate_ratios_by_channel( #trying a weighted avg
                 spots_df[intensity_cols].values,
-                ratio_path
+                ratio_path, 
+                spots_df['chan'].values
             )
-            
+
             # 4. Calculate distances and create stats
             self.logger.info("Calculating distances between spots...")
             #thresh_spots_df = spots_df[spots_df['over_thresh']].copy()
