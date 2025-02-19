@@ -154,49 +154,6 @@ class RatioCalculator:
         ratios = np.loadtxt(ratio_location).T
         return ratios
 
-    # def subset_spots_for_ratio(self, intensity_data: np.ndarray, detection_channels: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-    #     """
-    #     Subset spots for ratio calculation, maintaining detection channel information
-        
-    #     Args:
-    #         intensity_data: Array of spot intensities
-    #         detection_channels: Array of channel numbers where each spot was detected
-            
-    #     Returns:
-    #         Tuple of (subsetted intensities, subsetted detection channels)
-    #     """
-    #     if len(intensity_data) > self.config.N_SUBSET:
-    #         # Calculate how many spots to take from each channel
-    #         channels = self.config.get_round_spot_channels()
-    #         spots_per_channel = {ch: np.sum(detection_channels == ch) for ch in channels}
-    #         total_spots = sum(spots_per_channel.values())
-            
-    #         # Calculate target number of spots per channel
-    #         target_per_channel = {
-    #             ch: int(spots_per_channel[ch] * self.config.N_SUBSET / total_spots)
-    #             for ch in channels
-    #         }
-            
-    #         # Sample spots from each channel
-    #         selected_indices = []
-    #         for ch in channels:
-    #             channel_indices = np.where(detection_channels == ch)[0]
-    #             if len(channel_indices) > target_per_channel[ch]:
-    #                 selected = np.random.choice(
-    #                     channel_indices, 
-    #                     target_per_channel[ch], 
-    #                     replace=False
-    #                 )
-    #                 selected_indices.extend(selected)
-    #             else:
-    #                 selected_indices.extend(channel_indices)
-            
-    #         selected_indices = np.array(selected_indices)
-            
-    #         return intensity_data[selected_indices], detection_channels[selected_indices]
-    #     else:
-    #         return intensity_data, detection_channels
-
     def subset_spots_for_ratio(self, intensity_data: np.ndarray, detection_channels: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Subset spots for ratio calculation with emphasis on high-intensity spots in their detection channels
@@ -378,7 +335,7 @@ class RatioCalculator:
                 
                 if len(channel_spots) > 0:
                     # Filter based on intensity in detection channel
-                    intensity_threshold = np.percentile(channel_spots[:, ch_idx], 90)  # More stringent threshold
+                    intensity_threshold = np.percentile(channel_spots[:, ch_idx], self.config.PERCENTILE)  # More stringent threshold
                     high_intensity_mask = channel_spots[:, ch_idx] > intensity_threshold
                     high_intensity_spots = channel_spots[high_intensity_mask]
                     
