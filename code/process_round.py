@@ -95,7 +95,7 @@ class SpotAnalysisPipeline:
             # 2. Calculate intensities and apply threshold filtering
             self.logger.info("Processing spots...")
             spots_df = self.processor.calculate_intensities(spots_df)
-            spots_df, spots_over_thresh = self.processor.new_filter_by_threshold(spots_df)
+            spots_df, spots_over_thresh = self.processor.filter_by_threshold(spots_df)
             
             self.logger.info(
                 f"Found {len(spots_over_thresh)} spots over threshold "
