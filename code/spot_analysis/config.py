@@ -143,6 +143,7 @@ class Config:
     @classmethod
     def _load_manifest(cls):
         """Load the processing manifest JSON file"""
+        #pipeline path
         manifest_path = list(pathlib.Path(cls.DATA_FOLDER).glob("derived/processing_manifest.json"))
         
         if not len(manifest_path):
