@@ -336,8 +336,10 @@ class RatioCalculator:
                 if len(channel_spots) > 0:
                     # Filter based on intensity in detection channel
                     intensity_threshold = np.percentile(channel_spots[:, ch_idx], self.config.PERCENTILE)  # More stringent threshold
+                    print(f" Intensity threshold: {intensity_threshold} for channel: {channel}")
                     high_intensity_mask = channel_spots[:, ch_idx] > intensity_threshold
                     high_intensity_spots = channel_spots[high_intensity_mask]
+                    print(f" Number of high intensity spots: {len(high_intensity_spots)} in channel: {channel}")
                     
                     # Sample spots if we have too many
                     target_spots = min(len(high_intensity_spots), self.config.N_SUBSET // n_cam)
