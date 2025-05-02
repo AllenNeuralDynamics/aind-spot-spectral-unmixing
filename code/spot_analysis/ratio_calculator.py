@@ -397,6 +397,8 @@ class RatioCalculator:
 
                 optimized = r_hist[np.argmin(loss_hist)].detach().numpy()
                 optimized = optimized/np.linalg.norm(optimized, axis=0)
+                print('error', loss_hist.min()/len(selected_data))
+
             
             np.savetxt(ratio_location, 100 * optimized.T / optimized.max(0)[..., None], 
                     delimiter='\t', fmt='%d')
@@ -405,7 +407,6 @@ class RatioCalculator:
             for x in initial.T: print(norm(x))
             print('optimized')
             for x in optimized.T: print(norm(x))
-            print('error', loss_hist.min()/len(selected_data))
             
         ratios = np.loadtxt(ratio_location).T
         return ratios
