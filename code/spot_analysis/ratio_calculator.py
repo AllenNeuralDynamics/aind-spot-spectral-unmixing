@@ -330,25 +330,31 @@ class RatioCalculator:
             selected_spots = []
             for ch_idx, channel in enumerate(channels):
                 # Get spots detected in this channel
-                channel_mask = detection_channels == channel
-                channel_spots = intensity_data[channel_mask]
-                
-                if len(channel_spots) > 0:
-                    # Filter based on intensity in detection channel
-                    intensity_threshold = np.percentile(channel_spots[:, ch_idx], self.config.PERCENTILE)  # More stringent threshold
-                    print(f" Intensity threshold: {intensity_threshold} for channel: {channel}")
-                    high_intensity_mask = channel_spots[:, ch_idx] > intensity_threshold
-                    high_intensity_spots = channel_spots[high_intensity_mask]
-                    print(f" Number of high intensity spots: {len(high_intensity_spots)} in channel: {channel}")
+                try: 
+                    channel_mask = detection_channels == channel
+                    channel_spots = intensity_data[channel_mask]
                     
-                    # Sample spots if we have too many
-                    target_spots = min(len(high_intensity_spots), self.config.N_SUBSET // n_cam)
-                    if len(high_intensity_spots) > target_spots:
-                        selected_indices = np.random.choice(len(high_intensity_spots), target_spots, replace=False)
-                        selected_spots.append(high_intensity_spots[selected_indices])
-                    else:
-                        selected_spots.append(high_intensity_spots)
-            
+                    if len(channel_spots) > 0:
+                        # Filter based on intensity in detection channel
+                        intensity_threshold = np.percentile(channel_spots[:, ch_idx], self.config.PERCENTILE)  # More stringent threshold
+                        print(f" Intensity threshold: {intensity_threshold} for channel: {channel}")
+                        high_intensity_mask = channel_spots[:, ch_idx] > intensity_threshold
+                        high_intensity_spots = channel_spots[high_intensity_mask]
+                        print(f" Number of high intensity spots: {len(high_intensity_spots)} in channel: {channel}")
+                        
+                        # Sample spots if we have too many
+                        target_spots = min(len(high_intensity_spots), self.config.N_SUBSET // n_cam)
+                        if len(target_spots)==0: 
+                            print(f'no spots found in channel {channel}')
+                            continue
+                        if len(high_intensity_spots) > target_spots:
+                            selected_indices = np.random.choice(len(high_intensity_spots), target_spots, replace=False)
+                            selected_spots.append(high_intensity_spots[selected_indices])
+                        else:
+                            selected_spots.append(high_intensity_spots)
+                except Exception as e: 
+                    print(f'Error {e} in sampling spots in channel {channel} for calculating dye line')
+                
             # Combine selected spots
             if not selected_spots:
                 print("Warning: No spots met the selection criteria.")
