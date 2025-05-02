@@ -351,42 +351,46 @@ class RatioCalculator:
             
             # Combine selected spots
             if not selected_spots:
-                print("Warning: No spots met the selection criteria")
-            
-            selected_data = np.vstack(selected_spots)
-            
-            # Setup CUDA and tensors
-            os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
-            os.environ['TORCH_USE_CUDA_DSA'] = '1'
-            torch.backends.cuda.matmul.allow_tf32 = False
-            
-            r_gpu = torch.from_numpy(initial).cuda(0).requires_grad_()
-            data_gpu = torch.from_numpy(selected_data).cuda(0).double()
-            
-            # Optimization
-            n_sub = np.int32(len(selected_data) * self.config.FRAC_SAMPLED)
-            loss_hist = torch.zeros(self.config.EPOCHS)
-            r_hist = torch.zeros((self.config.EPOCHS, n_cam, n_cam))
-
-            for i in range(self.config.EPOCHS):
-                if not i % self.config.RESAMPLE_ITER:
-                    sub_gpu = data_gpu[np.random.choice(len(selected_data), n_sub, replace=False)]
-                    
-                if not i % 1000 and i or i == 1:
-                    print(i, loss_hist[i-1], flush=True)
-                    
-                loss = objective_fn(r_gpu.double(), sub_gpu, self.config.L1)
-                loss.backward()
+                print("Warning: No spots met the selection criteria.")
+                print(f"This is generally due to there being very few spots detected.")
+                print("Saving default identity matrix as ratio between channel intensity.")
+                optimized = initial
+            else: 
                 
-                loss_hist[i] = objective_fn(r_gpu.clone().double(), data_gpu, self.config.L1).data
-                r_hist[i] = r_gpu.clone().double()
+                selected_data = np.vstack(selected_spots)
                 
-                r_gpu.data -= self.config.LEARNING_RATE * r_gpu.grad.data
-                r_gpu.data = torch.div(r_gpu.data, torch.norm(r_gpu.data))
-                r_gpu.grad = None
+                # Setup CUDA and tensors
+                os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+                os.environ['TORCH_USE_CUDA_DSA'] = '1'
+                torch.backends.cuda.matmul.allow_tf32 = False
+                
+                r_gpu = torch.from_numpy(initial).cuda(0).requires_grad_()
+                data_gpu = torch.from_numpy(selected_data).cuda(0).double()
+                
+                # Optimization
+                n_sub = np.int32(len(selected_data) * self.config.FRAC_SAMPLED)
+                loss_hist = torch.zeros(self.config.EPOCHS)
+                r_hist = torch.zeros((self.config.EPOCHS, n_cam, n_cam))
 
-            optimized = r_hist[np.argmin(loss_hist)].detach().numpy()
-            optimized = optimized/np.linalg.norm(optimized, axis=0)
+                for i in range(self.config.EPOCHS):
+                    if not i % self.config.RESAMPLE_ITER:
+                        sub_gpu = data_gpu[np.random.choice(len(selected_data), n_sub, replace=False)]
+                        
+                    if not i % 1000 and i or i == 1:
+                        print(i, loss_hist[i-1], flush=True)
+                        
+                    loss = objective_fn(r_gpu.double(), sub_gpu, self.config.L1)
+                    loss.backward()
+                    
+                    loss_hist[i] = objective_fn(r_gpu.clone().double(), data_gpu, self.config.L1).data
+                    r_hist[i] = r_gpu.clone().double()
+                    
+                    r_gpu.data -= self.config.LEARNING_RATE * r_gpu.grad.data
+                    r_gpu.data = torch.div(r_gpu.data, torch.norm(r_gpu.data))
+                    r_gpu.grad = None
+
+                optimized = r_hist[np.argmin(loss_hist)].detach().numpy()
+                optimized = optimized/np.linalg.norm(optimized, axis=0)
             
             np.savetxt(ratio_location, 100 * optimized.T / optimized.max(0)[..., None], 
                     delimiter='\t', fmt='%d')
