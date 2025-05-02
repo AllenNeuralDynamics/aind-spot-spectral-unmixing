@@ -351,7 +351,7 @@ class RatioCalculator:
             
             # Combine selected spots
             if not selected_spots:
-                raise ValueError("No spots met the selection criteria")
+                print("Warning: No spots met the selection criteria")
             
             selected_data = np.vstack(selected_spots)
             
