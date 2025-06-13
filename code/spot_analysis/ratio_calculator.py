@@ -344,7 +344,7 @@ class RatioCalculator:
                         
                         # Sample spots if we have too many
                         target_spots = min(len(high_intensity_spots), self.config.N_SUBSET // n_cam)
-                        if len(target_spots)==0: 
+                        if target_spots==0: 
                             print(f'no spots found in channel {channel}')
                             continue
                         if len(high_intensity_spots) > target_spots:
@@ -354,17 +354,15 @@ class RatioCalculator:
                             selected_spots.append(high_intensity_spots)
                 except Exception as e: 
                     print(f'Error {e} in sampling spots in channel {channel} for calculating dye line')
-                
+            selected_data = np.vstack(selected_spots)
             # Combine selected spots
-            if not selected_spots:
-                print("Warning: No spots met the selection criteria.")
+            if len(selected_data)<1000:
+                print("Warning: Less than 1000 spots met the selection criteria.")
                 print(f"This is generally due to there being very few spots detected.")
                 print("Saving default identity matrix as ratio between channel intensity.")
                 optimized = initial
             else: 
-                
-                selected_data = np.vstack(selected_spots)
-                
+                                
                 # Setup CUDA and tensors
                 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
                 os.environ['TORCH_USE_CUDA_DSA'] = '1'
