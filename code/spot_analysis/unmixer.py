@@ -158,6 +158,14 @@ class SpotUnmixer:
             Tuple containing:
             - DataFrame of unmixed spots
             - List of dictionaries containing statistics for each channel
+
+
+        Note: 
+        MJD suggests approach where we _don't_ iterate over spots by/within channels in _filter_spatial_matches(), 
+        but instead perform our _spatial_ analysis on more systematic level, such as running (multiscale? like spotsweeper)
+        KNN on all spots, and then globally removing neighbours that are too close, and/or (following spotsweeper) running clustering (PCA) on those results. 
+
+        
         """
         unmixed_spots = []
         channel_stats = []
