@@ -331,7 +331,7 @@ class RatioCalculator:
             for ch_idx, channel in enumerate(channels):
                 # Get spots detected in this channel
                 try: 
-                    channel_mask = detection_channels == channel
+                    channel_mask = detection_channels == str(channel)
                     channel_spots = intensity_data[channel_mask]
                     
                     if len(channel_spots) > 0:
