@@ -215,10 +215,9 @@ def main():
     """Main entry point"""
     # Example usage
     pipeline = SpotAnalysisPipeline(
-       round_number=13,
-       spots_folder=Path('/data/'),
-       output_folder=Path('/results/'),
-       min_distances=[3.0, 4.0, 5.0]
+       spots_folder=Path('/root/capsule/data/'),
+       output_folder=Path('/root/capsule/results/'),
+       min_distances=[3.0]
     )
 
     # parser = argparse.ArgumentParser()
