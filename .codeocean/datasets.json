@@ -2,12 +2,8 @@
 	"version": 1,
 	"attached_datasets": [
 		{
-			"id": "1e65a1a2-1d77-4ba9-81b8-dd9edc22c354",
-			"mount": "HCR_767022_2025-07-25_13-00-00_processed_2025-07-26_19-56-19"
-		},
-		{
-			"id": "36419b1c-0f55-48e6-8bfd-48646ee5f93d",
-			"mount": "HCR_767022_2025-07-25_13-00-00_processed_2025-07-26_19-56-19_temp_spots"
+			"id": "2808dfaa-a572-41f1-bbdc-23e3eec8597a",
+			"mount": "HCR_755252_2025-07-31_13-00-00_processed_2025-08-01_16-55-55"
 		}
 	]
 }

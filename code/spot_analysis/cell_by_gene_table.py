@@ -49,8 +49,8 @@ class cell_by_gene_processor:
             for ch in round_chans:
                 ch_spots_df.loc[ch_spots_df['chan']==ch, 'gene'] = self.config.GENE_DICT[str(rn)][ch]
             
-            if unmixed:
-                ch_spots_df = ch_spots_df.loc[ch_spots_df['chan']==ch_spots_df['unmixed_chan']]
+            # if unmixed:
+                # ch_spots_df = ch_spots_df.loc[ch_spots_df['chan']==ch_spots_df['unmixed_chan']]
                 
             spots_df = pd.concat([spots_df, ch_spots_df])
             
@@ -73,7 +73,7 @@ class cell_by_gene_processor:
             if len(file_location)>0:
                 file_loc = file_location[0]
             else:
-                file_location = list(pathlib.Path(self.config.DATA_FOLDER).glob('*/metrics.pickle')) #capsule
+                file_location = list(pathlib.Path(self.config.DATA_FOLDER).glob('*/cell_body_segmentation/metrics.pickle')) #capsule
                 file_loc = file_location[0]
 
             with open(file_loc, 'rb') as file:
