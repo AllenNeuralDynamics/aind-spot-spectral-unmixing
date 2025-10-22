@@ -76,6 +76,9 @@ class cell_by_gene_processor:
                 file_location = list(pathlib.Path(self.config.DATA_FOLDER).glob('*/cell_body_segmentation/metrics.pickle')) #capsule
                 file_loc = file_location[0]
 
+            if not pathlib.Path(file_loc).exists():
+                return self.create_empty_segmentation_df(rounds)
+                 
             with open(file_loc, 'rb') as file:
                 round_data = pickle.load(file)
                 
@@ -87,7 +90,48 @@ class cell_by_gene_processor:
             segmentation_df = pd.concat([segmentation_df, round_df])
             
         return segmentation_df
-    
+
+    def create_empty_segmentation_df(self, rounds: List[int]) -> pd.DataFrame:
+        """Creates an empty segmentation_df for use when no segmentation_df is present
+        """
+        def create_empty_qc_metrics_dataframe():
+            """
+            Create an empty DataFrame matching the cell segmentation QC metrics format.
+            
+            Returns 
+            -------
+            pd.DataFrame
+                Empty DataFrame with columns:
+                - label: int, cell ID
+                - volume: float, cell volume in voxels
+                - bbox_z_min, bbox_y_min, bbox_x_min: uint32, bounding box minimum coordinates
+                - bbox_z_max, bbox_y_max, bbox_x_max: uint32, bounding box maximum coordinates
+            """
+            df = pd.DataFrame({
+                'label': pd.Series(dtype='int64'),
+                'volume': pd.Series(dtype='float64'),
+                'bbox_z_min': pd.Series(dtype='uint32'),
+                'bbox_y_min': pd.Series(dtype='uint32'),
+                'bbox_x_min': pd.Series(dtype='uint32'),
+                'bbox_z_max': pd.Series(dtype='uint32'),
+                'bbox_y_max': pd.Series(dtype='uint32'),
+                'bbox_x_max': pd.Series(dtype='uint32'),
+            })
+            return df
+        segmentation_df = pd.DataFrame()
+        for rn in rounds:
+            
+            round_data = create_empty_qc_metrics_dataframe()
+
+            round_df = pd.DataFrame(round_data).T
+            round_df['round'] = rn
+            round_df['cell_id'] = round_df.index
+            round_df['centroid'] = round_df['global_bbox'].apply(self.find_centroid)
+            
+            segmentation_df = pd.concat([segmentation_df, round_df])
+            
+        return segmentation_df
+
     def process_cell_annotations(self, spots_df: pd.DataFrame, segmentation_df: pd.DataFrame) -> pd.DataFrame:
         """Process cell annotations and create counts dataframe"""
         merged_df = pd.merge(segmentation_df, spots_df, on='cell_id', how='inner')
