@@ -8,7 +8,7 @@ class SpotDataLoader:
     def __init__(self):
         self.config = Config
         self.spot_col_order = [
-            'spot_id', 'chan', 'chan_spot_id', 'cell_id', 'round',
+            'spot_id', 'chan', 'chan_spot_id', 'round',
             'z', 'y', 'x', 'z_center', 'y_center', 'x_center', 'dist', 'r'
         ]
         self.tile_col = 'tile_name'
@@ -19,7 +19,7 @@ class SpotDataLoader:
         
         round_n = self.config.ROUND_N
         multichan_folders = self.config.get_folder_paths()['multichan_folders']
-        spot_col_order = ['spot_id','chan','chan_spot_id','cell_id','round','z','y','x','z_center','y_center','x_center','dist','r'] 
+        spot_col_order = ['spot_id','chan','chan_spot_id','round','z','y','x','z_center','y_center','x_center','dist','r'] 
         # spot_cols = ['Z','Y','X','Z_center','Y_center','X_center','dist','r','SEG_ID','FG','BG'] #what comes from CSV 
         #spot_cols = ['z','y','x','z_center','y_center','x_center','dist','r','chan_'+str(ch)+'_fg','chan_'+str(ch)+'_bg','cell_id']
         # spots = pd.DataFrame(np.load(self.config.SPOTS_FOLDER.joinpath(spots_folders[str(ch)])),columns=spot_cols)
@@ -33,7 +33,7 @@ class SpotDataLoader:
                                  'Z_center': 'z_center', 
                                  'Y_center': 'y_center', 
                                  'X_center': 'x_center', 
-                                 'SEG_ID': 'cell_id', 
+                                #  'SEG_ID': 'cell_id', 
                                  'FG': f'chan_{ch}_fg', 
                                  'BG': f'chan_{ch}_bg'})
         spots['round']=str(round_n)
@@ -49,7 +49,7 @@ class SpotDataLoader:
     def load_detected_spots_for_channel(self, ch):
         round_n = self.config.ROUND_N
         spots_folders = self.config.get_folder_paths()['spots_folders']
-        spot_col_order = ['spot_id','chan','chan_spot_id','cell_id','round','z','y','x','z_center','y_center','x_center','dist','r'] 
+        spot_col_order = ['spot_id','chan','chan_spot_id','round','z','y','x','z_center','y_center','x_center','dist','r'] 
         # spot_cols = ['Z','Y','X','Z_center','Y_center','X_center','dist','r','SEG_ID','FG','BG'] #what comes from CSV 
         spots = pd.read_csv(self.config.SPOTS_FOLDER.joinpath(spots_folders[str(ch)]))
         spots = spots.rename(columns = {'Z':'z',
@@ -58,7 +58,7 @@ class SpotDataLoader:
                                  'Z_center': 'z_center', 
                                  'Y_center': 'y_center', 
                                  'X_center': 'x_center', 
-                                 'SEG_ID': 'cell_id', 
+                                #  'SEG_ID': 'cell_id', 
                                  'FG': f'chan_{ch}_fg', 
                                  'BG': f'chan_{ch}_bg'})
         spots['round']=str(round_n)
@@ -132,7 +132,7 @@ class SpotDataLoader:
                         existing_drop_cols = [col for col in drop_cols if col in chan_multichan_df.columns]
                         test_multichan = chan_multichan_df.drop(existing_drop_cols, axis = 1)
 
-                        channel_spots[str(m_ch)] = channel_spots[m_ch].merge(test_multichan, on = ['z', 'y', 'x', 'cell_id', 'round', 'z_center', 'y_center', 'x_center', 'dist', 'r'], how = 'inner')
+                        channel_spots[str(m_ch)] = channel_spots[m_ch].merge(test_multichan, on = ['z', 'y', 'x', 'round', 'z_center', 'y_center', 'x_center', 'dist', 'r'], how = 'inner')
                     except Exception as e: 
                         print(f"Error processing channel {ch} at measurement channel {m_ch}: {str(e)}")
                         continue
