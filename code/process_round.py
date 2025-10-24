@@ -41,9 +41,12 @@ class SpotAnalysisPipeline:
         # Update configuration
         #Config.ROUND_N = round_number
         #Config = Config()
-        self.config = Config()
         Config.SPOTS_FOLDER = spots_folder
+        Config.DATA_FOLDER = spots_folder
         Config.OUTPUT_FOLDER = output_folder
+        Config.OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
+        Config.SCRATCH_FOLDER.mkdir(parents=True, exist_ok=True)
+        self.config = Config()
         
         # Set default min distances if not provided
         self.min_distances = min_distances or [3.0, 4.0, 5.0]
@@ -62,12 +65,18 @@ class SpotAnalysisPipeline:
         """Setup logging configuration"""
         logger = logging.getLogger(__name__)
         logger.setLevel(logging.INFO)
+
+        # Clear existing handlers to avoid duplicates when processing multiple tiles
+        if logger.handlers:
+            for handler in list(logger.handlers):
+                logger.removeHandler(handler)
+                handler.close()
         
         # Create handlers
         console_handler = logging.StreamHandler()
-        file_handler = logging.FileHandler(
-            Config.OUTPUT_FOLDER / f'round_{Config.ROUND_N}_processing.log'
-        )
+        tile_suffix = f'_tile_{Config.CURRENT_TILE}' if Config.CURRENT_TILE else ''
+        log_path = Config.OUTPUT_FOLDER / f'round_{Config.ROUND_N}{tile_suffix}_processing.log'
+        file_handler = logging.FileHandler(log_path)
         
         # Create formatters and add it to handlers
         log_format = logging.Formatter(
@@ -84,7 +93,9 @@ class SpotAnalysisPipeline:
     
     def run(self):
         """Run the complete spot analysis pipeline"""
-        self.logger.info(f"Starting analysis for Round {Config.ROUND_N}")
+        tile_suffix = f'_tile_{Config.CURRENT_TILE}' if Config.CURRENT_TILE else ''
+        tile_label = Config.CURRENT_TILE or 'N/A'
+        self.logger.info(f"Starting analysis for Round {Config.ROUND_N}, Tile {tile_label}")
         
         try:
             # 1. Load Data
@@ -103,19 +114,14 @@ class SpotAnalysisPipeline:
             )
             
             # Save intermediate results
-            spots_df.to_pickle(
-                Config.OUTPUT_FOLDER / 
-                f'mixed_spots_R{Config.ROUND_N}.pkl'
-            )
-
-            spots_df.to_pickle(
-                Config.SCRATCH_FOLDER / 
-                f'mixed_spots_R{Config.ROUND_N}.pkl'
-            )
+            mixed_output_path = Config.OUTPUT_FOLDER / f'mixed_spots_R{Config.ROUND_N}{tile_suffix}.pkl'
+            mixed_scratch_path = Config.SCRATCH_FOLDER / f'mixed_spots_R{Config.ROUND_N}{tile_suffix}.pkl'
+            spots_df.to_pickle(mixed_output_path)
+            spots_df.to_pickle(mixed_scratch_path)
             
             # 3. Calculate ratios
             self.logger.info("Calculating channel ratios...")
-            ratio_path = Config.OUTPUT_FOLDER / f'r{Config.ROUND_N}_ratios.txt'
+            ratio_path = Config.OUTPUT_FOLDER / f'r{Config.ROUND_N}{tile_suffix}_ratios.txt'
             intensity_cols = [
                 f'chan_{ch}_intensity'
                 for ch in Config.get_round_spot_channels()
@@ -127,7 +133,7 @@ class SpotAnalysisPipeline:
             ratios = self.ratio_calculator.calculate_ratios_by_channel( #trying a weighted avg
                 spots_df[intensity_cols].values,
                 ratio_path, 
-                spots_df['chan'].values
+                spots_df['chan'].to_numpy()
             )
 
             # 4. Calculate distances and create stats
@@ -136,8 +142,8 @@ class SpotAnalysisPipeline:
             stats_df = self.unmixer.calculate_distances(spots_df, ratios)
 
             #save stats_df
-            stats_df_csv_name = '/results/spot_unmixing_stats.csv'
-            stats_df.to_csv(stats_df_csv_name)
+            stats_df_csv_path = Config.OUTPUT_FOLDER / f'spot_unmixing_stats{tile_suffix}.csv'
+            stats_df.to_csv(stats_df_csv_path)
             
             # 5. Application of QC filters has been moved to interactive capsule
             self.logger.info("Applying QC filters...")
@@ -192,12 +198,14 @@ class SpotAnalysisPipeline:
     def _save_summary_statistics(self, results):
         """Save summary statistics for all processing runs"""
         summary_stats = []
+        tile_suffix = f'_tile_{Config.CURRENT_TILE}' if Config.CURRENT_TILE else ''
         
         for min_dist, (unmixed_df, stats) in results.items():
             for channel_stat in stats:
                 stat_dict = {
                     'min_dist': min_dist,
                     'round': Config.ROUND_N,
+                    'tile': Config.CURRENT_TILE,
                     **channel_stat
                 }
                 summary_stats.append(stat_dict)
@@ -206,7 +214,7 @@ class SpotAnalysisPipeline:
         summary_df = pd.DataFrame(summary_stats)
         summary_df.to_csv(
             Config.OUTPUT_FOLDER / 
-            f'round_{Config.ROUND_N}_summary_stats.csv',
+            f'round_{Config.ROUND_N}{tile_suffix}_summary_stats.csv',
             index=False
         )
 

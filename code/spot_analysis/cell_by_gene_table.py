@@ -35,13 +35,29 @@ class cell_by_gene_processor:
     def load_spots(self, rounds: List[int], unmixed: bool = True) -> pd.DataFrame:
         """Load and process spots data for given rounds"""
         spots_df = pd.DataFrame()
+        tile_suffix = f"_tile_{self.config.CURRENT_TILE}" if self.config.CURRENT_TILE else ""
         
         for rn in rounds:
             round_chans = list(self.config.GENE_DICT[str(rn)].keys())
             
             file_suffix = 'unmixed_spots' if unmixed else 'mixed_spots'
-            file_name = f'{file_suffix}_R{rn}_minDist_{self.config.min_dist}.pkl' if unmixed else f'{file_suffix}_R{rn}.pkl'
+            if unmixed:
+                file_name = f'{file_suffix}_R{rn}{tile_suffix}_minDist_{self.config.min_dist}.pkl'
+            else:
+                file_name = f'{file_suffix}_R{rn}{tile_suffix}.pkl'
+
             file_location = self.config.SCRATCH_FOLDER / file_name
+
+            if not file_location.exists() and tile_suffix:
+                # Fallback to legacy naming without tile suffix for compatibility
+                legacy_name = f'{file_suffix}_R{rn}_minDist_{self.config.min_dist}.pkl' if unmixed else f'{file_suffix}_R{rn}.pkl'
+                legacy_location = self.config.SCRATCH_FOLDER / legacy_name
+                if legacy_location.exists():
+                    file_location = legacy_location
+                else:
+                    raise FileNotFoundError(f"Could not find spot file for round {rn}: {file_location} or {legacy_location}")
+            elif not file_location.exists():
+                raise FileNotFoundError(f"Could not find spot file for round {rn}: {file_location}")
             
             with open(file_location, 'rb') as file:
                 ch_spots_df = pickle.load(file)
@@ -218,11 +234,13 @@ class cell_by_gene_processor:
         #filtered_mixed = self.filter_by_volume(mixed_annotations)
         
         # Save results
-        unmixed_annotations.to_pickle(self.config.SCRATCH_FOLDER / 'unmixed_cell_by_gene.pkl')
-        mixed_annotations.to_pickle(self.config.SCRATCH_FOLDER / 'mixed_cell_by_gene.pkl')
+        tile_suffix = f"_tile_{self.config.CURRENT_TILE}" if self.config.CURRENT_TILE else ""
 
-        unmixed_annotations.to_csv(self.config.OUTPUT_FOLDER / 'unmixed_cell_by_gene.csv')
-        mixed_annotations.to_csv(self.config.OUTPUT_FOLDER / 'mixed_cell_by_gene.csv')
+        unmixed_annotations.to_pickle(self.config.SCRATCH_FOLDER / f'unmixed_cell_by_gene{tile_suffix}.pkl')
+        mixed_annotations.to_pickle(self.config.SCRATCH_FOLDER / f'mixed_cell_by_gene{tile_suffix}.pkl')
+
+        unmixed_annotations.to_csv(self.config.OUTPUT_FOLDER / f'unmixed_cell_by_gene{tile_suffix}.csv')
+        mixed_annotations.to_csv(self.config.OUTPUT_FOLDER / f'mixed_cell_by_gene{tile_suffix}.csv')
         
         return unmixed_annotations, mixed_annotations
 

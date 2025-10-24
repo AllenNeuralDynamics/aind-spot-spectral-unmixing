@@ -1,5 +1,5 @@
 import pathlib
-from typing import Dict, Any, List, Set
+from typing import Dict, Any, List, Set, Optional
 import os
 import re
 import json
@@ -34,8 +34,9 @@ class Config:
     min_dist = 3
     volume_quantiles = (0.08, 0.5, 0.95)
 
-
+    CURRENT_TILE: Optional[str] = None
     folder_paths = None
+    folder_paths_by_tile: Optional[Dict[str, Dict[str, Any]]] = None
 
     # Gene dictionary
     DEFAULT_GENE_DICT: Dict[str, Dict[str, str]] = {'0':{'1': 'Vip', '2': 'Sst', '4': 'Slc17a7'},
@@ -54,13 +55,11 @@ class Config:
             '13':{'1': 'Snap25', '2': 'lgfbp4', '3': 'Chrm2', '4': 'Ndnf'}}
 
     def __init__(self):
-
-        
         self._load_manifest()
         self._update_round_from_manifest()
         self._make_gene_dict_from_manifest()
         self.folder_paths = None
-        self.folder_paths = self.get_and_validate_folder_paths()
+        self._ensure_folder_paths_loaded()
 
         
 
@@ -131,13 +130,78 @@ class Config:
         
         
     @classmethod
-    def get_round_spot_channels(cls) -> Dict[str, str]:
-        spot_channels = cls.manifest['spot_channels']
-        return spot_channels
-    
+    def get_round_spot_channels(cls) -> List[str]:
+        if cls.manifest and cls.manifest.get('spot_channels'):
+            return cls.manifest['spot_channels']
+        return list(cls.get_round_channels().keys())
+
     @classmethod
-    def get_folder_paths(cls) -> Dict[str, Dict[str, str]]:
-        return cls.get_and_validate_folder_paths()
+    def _ensure_folder_paths_loaded(cls) -> None:
+        if cls.folder_paths_by_tile is not None:
+            return
+
+        tile_data = cls.get_folder_paths_pipeline()
+        if not tile_data:
+            raise FileNotFoundError("No spot intensity files were found under the data folder.")
+
+        cls.folder_paths_by_tile = tile_data
+        tile_list = list(tile_data.keys())
+        print(f"Found {len(tile_list)} tile(s): {tile_list}")
+
+        if cls.CURRENT_TILE is None and len(tile_list) == 1:
+            cls.CURRENT_TILE = tile_list[0]
+            print(f"Auto-selected single tile: {cls.CURRENT_TILE}")
+
+        if cls.CURRENT_TILE is not None:
+            cls.folder_paths = cls.folder_paths_by_tile.get(cls.CURRENT_TILE)
+
+    @classmethod
+    def get_unique_tiles(cls) -> List[str]:
+        cls._ensure_folder_paths_loaded()
+        if cls.folder_paths_by_tile is None:
+            return []
+        return list(cls.folder_paths_by_tile.keys())
+
+    @classmethod
+    def get_folder_paths_for_tile(cls, tile_name: str) -> Dict[str, Any]:
+        cls._ensure_folder_paths_loaded()
+        available_tiles = list(cls.folder_paths_by_tile.keys()) if cls.folder_paths_by_tile else []
+        if cls.folder_paths_by_tile is None or tile_name not in cls.folder_paths_by_tile:
+            raise ValueError(
+                f"Tile {tile_name} not found in folder paths. Available tiles: {available_tiles}"
+            )
+        return cls.folder_paths_by_tile[tile_name]
+
+    @classmethod
+    def set_current_tile(cls, tile_name: str) -> None:
+        cls._ensure_folder_paths_loaded()
+        available_tiles = list(cls.folder_paths_by_tile.keys()) if cls.folder_paths_by_tile else []
+        if cls.folder_paths_by_tile is None or tile_name not in cls.folder_paths_by_tile:
+            raise ValueError(
+                f"Tile {tile_name} not found. Available tiles: {available_tiles}"
+            )
+        cls.CURRENT_TILE = tile_name
+        cls.folder_paths = cls.folder_paths_by_tile[tile_name]
+        print(f"Set current tile to: {tile_name}")
+
+    @classmethod
+    def get_folder_paths(cls) -> Dict[str, Any]:
+        cls._ensure_folder_paths_loaded()
+        if cls.CURRENT_TILE is None:
+            tiles = cls.get_unique_tiles()
+            if len(tiles) == 1:
+                cls.CURRENT_TILE = tiles[0]
+                if cls.folder_paths_by_tile is not None:
+                    cls.folder_paths = cls.folder_paths_by_tile[cls.CURRENT_TILE]
+                print(f"Auto-selected single tile: {cls.CURRENT_TILE}")
+            else:
+                raise ValueError(
+                    "Multiple tiles detected but no current tile set. "
+                    "Call Config.set_current_tile(tile_name) before accessing folder paths."
+                )
+        if cls.folder_paths_by_tile is None:
+            raise ValueError("Folder paths not initialized")
+        return cls.folder_paths_by_tile[cls.CURRENT_TILE]
 
     
     @classmethod
@@ -163,12 +227,19 @@ class Config:
             raise FileNotFoundError(f"Processing manifest not found at {manifest_path}")
 
     @classmethod
-    def get_folder_paths_pipeline(cls) -> Dict[str, Dict[str, str]]: #get_folder_paths_pipeline
-        """Returns folder paths from what is attached in /data/"""
-        spot_regex = r".*(\d{1,3})_stats\/image_data_.*_(\d{1,3})_versus_spots_(\d{1,3})\.csv"
-        exclude = set(['*.zarr'])
-        spots_folders = {}
-        multichan_folders = {}
+    def get_folder_paths_pipeline(cls) -> Dict[str, Dict[str, Any]]: #get_folder_paths_pipeline
+        """Returns folder paths from what is attached in /data/, organized by tile"""
+        tile_regex = re.compile(
+            r"(Tile_X_\d{4}_Y_\d{4}_Z_\d{4})_ch_(\d{1,3})_stats/"
+            r"image_data_.*_ch_(\d{1,3})_versus_spots_(\d{1,3})\.csv"
+        )
+        legacy_regex = re.compile(
+            r".*(\d{1,3})_stats/image_data_.*_(\d{1,3})_versus_spots_(\d{1,3})\.csv"
+        )
+
+        tile_data: Dict[str, Dict[str, Any]] = {}
+        legacy_spots: Dict[str, str] = {}
+        legacy_multichan: Dict[str, Dict[str, str]] = {}
 
         for root, dirs, files in os.walk(cls.DATA_FOLDER):
             # Exclude .zarr directories
@@ -180,59 +251,97 @@ class Config:
                 full_path = os.path.join(root, file)
                 relative_path = os.path.relpath(full_path, cls.DATA_FOLDER)
 
-                # Check for spot intensity files
-                spot_match = re.match(spot_regex, relative_path)
-                if spot_match:
-                    source_channel = spot_match.group(2)
-                    target_channel = spot_match.group(3)
+                # Check for tile-based spot intensity files
+                tile_match = tile_regex.match(relative_path)
+                if tile_match:
+                    tile_name = tile_match.group(1)
+                    source_channel = tile_match.group(2)
+                    target_channel = tile_match.group(4)
 
-                    if source_channel == target_channel: 
-                        spots_folders[source_channel] = relative_path
+                    if tile_name not in tile_data:
+                        tile_data[tile_name] = {
+                            'spots_folders': {},
+                            'multichan_folders': {}
+                        }
+
+                    if source_channel == target_channel:
+                        tile_data[tile_name]['spots_folders'][source_channel] = relative_path
                     else:
-                        if multichan_folders == {} or source_channel not in multichan_folders.keys():
-                            multichan_folders[source_channel]= {target_channel: relative_path}
-                        else: 
-                            multichan_folders[source_channel][target_channel] = relative_path
-        return {
-            'spots_folders': spots_folders,
-            'multichan_folders': multichan_folders
-        }
+                        multichan = tile_data[tile_name]['multichan_folders']
+                        if source_channel not in multichan:
+                            multichan[source_channel] = {}
+                        multichan[source_channel][target_channel] = relative_path
+                    continue
+
+                legacy_match = legacy_regex.match(relative_path)
+                if legacy_match:
+                    source_channel = legacy_match.group(2)
+                    target_channel = legacy_match.group(3)
+
+                    if source_channel == target_channel:
+                        legacy_spots[source_channel] = relative_path
+                    else:
+                        if source_channel not in legacy_multichan:
+                            legacy_multichan[source_channel] = {}
+                        legacy_multichan[source_channel][target_channel] = relative_path
+
+        if tile_data:
+            return tile_data
+
+        if legacy_spots or legacy_multichan:
+            return {
+                'single_tile': {
+                    'spots_folders': legacy_spots,
+                    'multichan_folders': legacy_multichan
+                }
+            }
+
+        return {}
 
     @classmethod
-    def validate_folder_paths(cls, folder_paths: Dict[str, Dict[str, str]]) -> None:
+    def validate_folder_paths(cls, folder_paths: Dict[str, Any], tile_name: Optional[str] = None) -> None:
         """Validates the generated folder paths"""
         expected_channels = set(cls.get_round_channels().keys())
+        tile_label = f" for tile {tile_name}" if tile_name else ""
         
         # Validate spots folders
         spots_channels = set(folder_paths['spots_folders'].keys())
         if spots_channels != expected_channels:
             missing = expected_channels - spots_channels
             extra = spots_channels - expected_channels
-            print(f"Warning: Mismatch in spots folders. Missing: {missing}, Extra: {extra}")
+            print(f"Warning{tile_label}: Mismatch in spots folders. Missing: {missing}, Extra: {extra}")
 
         # Validate multichannel folders
         multichan_channels = set(folder_paths['multichan_folders'].keys())
         if multichan_channels != expected_channels:
             missing = expected_channels - multichan_channels
             extra = multichan_channels - expected_channels
-            print(f"Warning: Mismatch in multichannel folders. Missing: {missing}, Extra: {extra}")
+            print(f"Warning{tile_label}: Mismatch in multichannel folders. Missing: {missing}, Extra: {extra}")
 
         for source_channel, targets in folder_paths['multichan_folders'].items():
+            if not isinstance(targets, dict):
+                print(
+                    f"Warning{tile_label}: Expected multichannel targets for channel {source_channel} to be a dict, "
+                    f"but found {type(targets)}."
+                )
+                continue
+
             expected_targets = expected_channels - {source_channel}
-            if set(targets.keys()) != expected_targets:
-                missing = expected_targets - set(targets.keys())
-                extra = set(targets.keys()) - expected_targets
-                print(f"Warning: Mismatch in multichannel targets for channel {source_channel}. Missing: {missing}, Extra: {extra}")
+            target_keys = set(targets.keys())
+            if target_keys != expected_targets:
+                missing = expected_targets - target_keys
+                extra = target_keys - expected_targets
+                print(
+                    f"Warning{tile_label}: Mismatch in multichannel targets for channel {source_channel}. "
+                    f"Missing: {missing}, Extra: {extra}"
+                )
 
     @classmethod
-    def get_and_validate_folder_paths(cls) -> Dict[str, Dict[str, str]]:
+    def get_and_validate_folder_paths(cls) -> Dict[str, Any]:
         """Gets folder paths and validates them"""
-        if cls.folder_paths == None: 
-            folder_paths = cls.get_folder_paths_pipeline()
-            print(f'folder_paths {folder_paths}')
-
-            cls.validate_folder_paths(folder_paths)
-            cls.folder_paths = folder_paths
-        else: 
-            return cls.folder_paths
+        cls._ensure_folder_paths_loaded()
+        tile_paths = cls.get_folder_paths()
+        cls.validate_folder_paths(tile_paths, cls.CURRENT_TILE)
+        cls.folder_paths = tile_paths
+        return tile_paths
         

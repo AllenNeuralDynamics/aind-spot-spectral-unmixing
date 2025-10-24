@@ -201,13 +201,14 @@ class SpotUnmixer:
     
     def _save_results(self, unmixed_df: pd.DataFrame, min_dist: float) -> None:
         """Save unmixed spots to file"""
+        tile_suffix = f'_tile_{self.config.CURRENT_TILE}' if self.config.CURRENT_TILE else ''
         output_path = (
             self.config.OUTPUT_FOLDER /
-            f'unmixed_spots_R{self.config.ROUND_N}_minDist_{int(min_dist)}.pkl'
+            f'unmixed_spots_R{self.config.ROUND_N}{tile_suffix}_minDist_{int(min_dist)}.pkl'
         )
         scratch_path = (
             self.config.SCRATCH_FOLDER /
-            f'unmixed_spots_R{self.config.ROUND_N}_minDist_{int(min_dist)}.pkl'
+            f'unmixed_spots_R{self.config.ROUND_N}{tile_suffix}_minDist_{int(min_dist)}.pkl'
         )
 
         output_path.parent.mkdir(parents=True, exist_ok=True)

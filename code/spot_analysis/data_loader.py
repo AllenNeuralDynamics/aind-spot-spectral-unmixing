@@ -11,30 +11,8 @@ class SpotDataLoader:
             'spot_id', 'chan', 'chan_spot_id', 'cell_id', 'round',
             'z', 'y', 'x', 'z_center', 'y_center', 'x_center', 'dist', 'r'
         ]
+        self.tile_col = 'tile_name'
     
-    """def load_channel_spots(self, channel: str) -> pd.DataFrame:
-    #depreciated
-
-        spot_cols = [
-            'z', 'y', 'x', 'z_center', 'y_center', 'x_center',
-            'dist', 'r', f'chan_{channel}_fg', f'chan_{channel}_bg', 'cell_id'
-        ]
-        
-        spots_path = self.config.SPOTS_FOLDER / self.config.get_folder_paths()['spots_folders'][channel]
-
-        spots_data = pd.DataFrame(
-            np.load(spots_path),
-            columns=spot_cols
-        )
-
-        
-        spots_data['round'] = str(self.config.ROUND_N)
-        spots_data['chan'] = channel
-        spots_data['spot_id'] = range(1, len(spots_data) + 1)
-        spots_data['chan_spot_id'] = range(1, len(spots_data) + 1)
-        
-        return spots_data[list(self.spot_col_order) + list(np.setdiff1d(spots_data.columns, self.spot_col_order))]
-    """
 
     def load_multichannel_data(self, ch: str, m_ch: str) -> pd.DataFrame:
         
@@ -45,6 +23,9 @@ class SpotDataLoader:
         # spot_cols = ['Z','Y','X','Z_center','Y_center','X_center','dist','r','SEG_ID','FG','BG'] #what comes from CSV 
         #spot_cols = ['z','y','x','z_center','y_center','x_center','dist','r','chan_'+str(ch)+'_fg','chan_'+str(ch)+'_bg','cell_id']
         # spots = pd.DataFrame(np.load(self.config.SPOTS_FOLDER.joinpath(spots_folders[str(ch)])),columns=spot_cols)
+        if self.config.CURRENT_TILE is None:
+            raise ValueError("Config.CURRENT_TILE is not set. Call Config.set_current_tile before loading data.")
+
         spots = pd.read_csv(self.config.SPOTS_FOLDER.joinpath(multichan_folders[str(ch)][str(m_ch)]))
         spots = spots.rename(columns = {'Z':'z',
                                  'Y': 'y',
@@ -59,7 +40,10 @@ class SpotDataLoader:
         spots['chan']=str(ch)
         spots['spot_id']=range(1, len(spots)+1)
         spots['chan_spot_id']=range(1, len(spots)+1)
-        spots = spots[list(spot_col_order)+list(np.setdiff1d(spots.columns,spot_col_order))]
+        spots[self.tile_col] = self.config.CURRENT_TILE
+        base_cols = spot_col_order + [self.tile_col]
+        remaining_cols = [c for c in spots.columns if c not in base_cols]
+        spots = spots[base_cols + remaining_cols]
         return spots
 
     def load_detected_spots_for_channel(self, ch):
@@ -81,7 +65,12 @@ class SpotDataLoader:
         spots['chan']=str(ch)
         spots['spot_id']=range(1, len(spots)+1)
         spots['chan_spot_id']=range(1, len(spots)+1)
-        spots = spots[list(spot_col_order)+list(np.setdiff1d(spots.columns,spot_col_order))]
+        if self.config.CURRENT_TILE is None:
+            raise ValueError("Config.CURRENT_TILE is not set. Call Config.set_current_tile before loading data.")
+        spots[self.tile_col] = self.config.CURRENT_TILE
+        base_cols = spot_col_order + [self.tile_col]
+        remaining_cols = [c for c in spots.columns if c not in base_cols]
+        spots = spots[base_cols + remaining_cols]
         return spots
 
 
@@ -94,6 +83,8 @@ class SpotDataLoader:
 
         round_n = self.config.ROUND_N
         multichan_folders = self.config.get_folder_paths()['multichan_folders']
+        if self.config.CURRENT_TILE is None:
+            raise ValueError("Config.CURRENT_TILE is not set. Call Config.set_current_tile before loading data.")
 
         channel_spots = {}
         #get detected spots
@@ -137,7 +128,9 @@ class SpotDataLoader:
                     try: 
                         multi_spot_cols = ['z','y','x','chan_'+str(ch)+'_fg','chan_'+str(ch)+'_bg']
                         chan_multichan_df = self.load_multichannel_data(ch, m_ch)
-                        test_multichan = chan_multichan_df.drop(['spot_id', 'chan', 'chan_spot_id'], axis = 1)
+                        drop_cols = ['spot_id', 'chan', 'chan_spot_id', self.tile_col]
+                        existing_drop_cols = [col for col in drop_cols if col in chan_multichan_df.columns]
+                        test_multichan = chan_multichan_df.drop(existing_drop_cols, axis = 1)
 
                         channel_spots[str(m_ch)] = channel_spots[m_ch].merge(test_multichan, on = ['z', 'y', 'x', 'cell_id', 'round', 'z_center', 'y_center', 'x_center', 'dist', 'r'], how = 'inner')
                     except Exception as e: 
@@ -151,4 +144,7 @@ class SpotDataLoader:
             mixed_spots_df = pd.concat([mixed_spots_df,spots_list[i] ])
         for ch in channels:
             mixed_spots_df['chan_'+str(ch)+'_intensity'] = mixed_spots_df['chan_'+str(ch)+'_fg']-mixed_spots_df['chan_'+str(ch)+'_bg']
+
+        if not mixed_spots_df.empty:
+            mixed_spots_df[self.tile_col] = self.config.CURRENT_TILE
         return mixed_spots_df    
