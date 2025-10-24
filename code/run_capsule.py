@@ -13,7 +13,7 @@ class TileProcessor:
 
     def __init__(
         self,
-        spots_folder: Path = Path('/data/'),
+        spots_folder: Path = Path('/data/'), # test folder /root/capsule/data/test_unmixing_independent_tiles
         output_folder: Path = Path('/results/'),
         min_distances: Optional[List[float]] = None
     ) -> None:
