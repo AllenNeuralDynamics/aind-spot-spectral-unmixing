@@ -144,11 +144,11 @@ class Config:
     def _load_manifest(cls):
         """Load the processing manifest JSON file"""
         #pipeline path
-        manifest_path = list(pathlib.Path(cls.DATA_FOLDER).glob("derived/processing_manifest.json"))
+        manifest_path = list(pathlib.Path(cls.DATA_FOLDER).glob("processing_manifest.json"))
         
         if not len(manifest_path):
             print('Didn\'t find pipeline processing manifest')
-            manifest_path = list(pathlib.Path(cls.DATA_FOLDER).glob("*/derived/processing_manifest.json"))
+            manifest_path = list(pathlib.Path(cls.DATA_FOLDER).glob("*/processing_manifest.json"))
             if not len(manifest_path):
                 raise FileNotFoundError("No capsule processing_manifest.json was found!")
 
