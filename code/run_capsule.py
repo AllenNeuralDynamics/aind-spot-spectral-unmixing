@@ -45,7 +45,7 @@ class TileProcessor:
             # Run pipeline for tile
             pipeline = SpotAnalysisPipeline(
                 spots_folder=self.spots_folder,
-                output_folder=self.output_folder,
+                output_folder=self.output_folder.joinpath(tile_name),
                 min_distances=self.min_distances
             )
             tile_results = pipeline.run()
