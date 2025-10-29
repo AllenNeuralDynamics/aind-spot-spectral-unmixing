@@ -26,16 +26,30 @@ class SpotDataLoader:
         if self.config.CURRENT_TILE is None:
             raise ValueError("Config.CURRENT_TILE is not set. Call Config.set_current_tile before loading data.")
 
-        spots = pd.read_csv(self.config.SPOTS_FOLDER.joinpath(multichan_folders[str(ch)][str(m_ch)]))
-        spots = spots.rename(columns = {'Z':'z',
-                                 'Y': 'y',
-                                 'X': 'x', 
-                                 'Z_center': 'z_center', 
-                                 'Y_center': 'y_center', 
-                                 'X_center': 'x_center', 
-                                #  'SEG_ID': 'cell_id', 
-                                 'FG': f'chan_{ch}_fg', 
-                                 'BG': f'chan_{ch}_bg'})
+        # add support for case where one channel has NO spots. 
+        if multichan_folders[str(ch)].get(str(m_ch)) is None: 
+            spots = pd.DataFrame(columns = ['z',
+                                 'y',
+                                 'x', 
+                                 'z_center', 
+                                'y_center', 
+                                'x_center', 
+                                f'chan_{ch}_fg', 
+                                f'chan_{ch}_bg',
+                                'dist', 
+                                'r'
+                                ])
+        else: 
+            spots = pd.read_csv(self.config.SPOTS_FOLDER.joinpath(multichan_folders[str(ch)][str(m_ch)]))
+            spots = spots.rename(columns = {'Z':'z',
+                                    'Y': 'y',
+                                    'X': 'x', 
+                                    'Z_center': 'z_center', 
+                                    'Y_center': 'y_center', 
+                                    'X_center': 'x_center', 
+                                    #  'SEG_ID': 'cell_id', 
+                                    'FG': f'chan_{ch}_fg', 
+                                    'BG': f'chan_{ch}_bg'})
         spots['round']=str(round_n)
         spots['chan']=str(ch)
         spots['spot_id']=range(1, len(spots)+1)
@@ -51,16 +65,33 @@ class SpotDataLoader:
         spots_folders = self.config.get_folder_paths()['spots_folders']
         spot_col_order = ['spot_id','chan','chan_spot_id','round','z','y','x','z_center','y_center','x_center','dist','r'] 
         # spot_cols = ['Z','Y','X','Z_center','Y_center','X_center','dist','r','SEG_ID','FG','BG'] #what comes from CSV 
-        spots = pd.read_csv(self.config.SPOTS_FOLDER.joinpath(spots_folders[str(ch)]))
-        spots = spots.rename(columns = {'Z':'z',
-                                 'Y': 'y',
-                                 'X': 'x', 
-                                 'Z_center': 'z_center', 
-                                 'Y_center': 'y_center', 
-                                 'X_center': 'x_center', 
-                                #  'SEG_ID': 'cell_id', 
-                                 'FG': f'chan_{ch}_fg', 
-                                 'BG': f'chan_{ch}_bg'})
+        # add support for case if no spots in channel are detected; this means that 
+        # there will be no stats file for itself.... eg. 488 vs 488.csv 
+        # in this case should we make an empty table?  
+        if spots_folders.get(str(ch)) is None: 
+            spots = pd.DataFrame(columns = ['z',
+                                 'y',
+                                 'x', 
+                                 'z_center', 
+                                'y_center', 
+                                'x_center', 
+                                f'chan_{ch}_fg', 
+                                f'chan_{ch}_bg',
+                                'dist', 
+                                'r'
+                                ])
+        else: 
+            spots = pd.read_csv(self.config.SPOTS_FOLDER.joinpath(spots_folders[str(ch)]))
+            
+            spots = spots.rename(columns = {'Z':'z',
+                                    'Y': 'y',
+                                    'X': 'x', 
+                                    'Z_center': 'z_center', 
+                                    'Y_center': 'y_center', 
+                                    'X_center': 'x_center', 
+                                    #  'SEG_ID': 'cell_id', 
+                                    'FG': f'chan_{ch}_fg', 
+                                    'BG': f'chan_{ch}_bg'})
         spots['round']=str(round_n)
         spots['chan']=str(ch)
         spots['spot_id']=range(1, len(spots)+1)
