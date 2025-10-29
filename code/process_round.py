@@ -172,8 +172,8 @@ class SpotAnalysisPipeline:
             
 
             # 8. Generate cleaned up tables for analysis 
-            processor = cell_by_gene_processor()
-            unmixed_results, mixed_results = processor.process_pipeline([Config.ROUND_N])
+            # processor = cell_by_gene_processor()
+            # unmixed_results, mixed_results = processor.process_pipeline([Config.ROUND_N])
             # Save final results
             #unmixed_results.to_csv(
             #    Config.OUTPUT_FOLDER / 
