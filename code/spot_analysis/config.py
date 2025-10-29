@@ -209,6 +209,7 @@ class Config:
         """Load the processing manifest JSON file"""
         #pipeline path
         manifest_path = list(pathlib.Path(cls.DATA_FOLDER).glob("processing_manifest.json"))
+        # manifest_path = list(pathlib.Path('/data').glob("processing_manifest.json"))
         
         if not len(manifest_path):
             print('Didn\'t find pipeline processing manifest')
