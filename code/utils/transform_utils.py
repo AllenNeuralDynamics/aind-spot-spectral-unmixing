@@ -1,5 +1,3 @@
-import dask.array as da
-import dask_image.ndinterp
 import numpy as np
 import boto3
 import xmltodict
@@ -7,28 +5,48 @@ from scipy import ndimage
 from collections import defaultdict, OrderedDict
 
 
-# def get_stitching_and_nominal_transforms(xml_path: str): 
-#     """
-#     reads xml and returns a dict of per tile nominal and stitching transforms
-#     """
-#     transforms = load_and_calculate_transforms(xml_path)
+def apply_stitching_to_points(points: np.array, xml_path: str): 
+    """
+    Applies transforms to a big list of points representing the individual spots. 
+    
+    Parameters: 
+    -----------
+    points: nd.ndarray
+    Array in format [[X,Y,Z], [X2,Y2,Z2]....[Xn, Yn, Zn]]
+    
+    xml_path: str
+    path to xml to get stitching and nominal transforms from 
+
+    Returns: 
+    --------
+    transformed_points: np.ndarray
+    XYZ locations in stitched coordinate space
+
+    """
+    #points are in XYZ format
+    
+    transforms = load_and_calculate_stitching_transforms(xml_path)
+    
+    transformed_points = transforms @ points 
+    return transformed_points
 
 
-def apply_camera_alignment_to_tile_array(tile_array: da.array, tile_name: str, xml_path: str): 
 
-    transforms = None
-    if xml_path:
-        try:
-            transforms = load_and_calculate_transforms(xml_path)
-            print(f"Loaded transforms for {len(transforms)} tiles from XML")
-        except Exception as e:
-            print(f"Warning: Could not load transforms from XML: {e}")
+# def apply_camera_alignment_to_tile_array(tile_array: da.array, tile_name: str, xml_path: str): 
+
+#     transforms = None
+#     if xml_path:
+#         try:
+#             transforms = load_and_calculate_transforms(xml_path)
+#             print(f"Loaded transforms for {len(transforms)} tiles from XML")
+#         except Exception as e:
+#             print(f"Warning: Could not load transforms from XML: {e}")
 
 
-    tile_array = apply_transform_to_tile(tile_array, tile_name, transforms, xml_path)
-    chunk_size = (1,1,128,128,128)
-    tile_array=tile_array.rechunk(chunk_size)
-    return tile_array
+#     tile_array = apply_transform_to_tile(tile_array, tile_name, transforms, xml_path)
+#     chunk_size = (1,1,128,128,128)
+#     tile_array=tile_array.rechunk(chunk_size)
+#     return tile_array
 
 
 def load_xml(xml_path)-> OrderedDict:
@@ -134,6 +152,29 @@ def extract_tile_transforms(xml_path: str) -> dict[int, list[dict]]:
 
     return view_transforms
 
+def extract_nominal_and_stitching_transforms(xml_path: str) -> dict[int, list[dict]]:
+    """
+    Extract only the nominal and stitching affine transformation from each tile's transform stack in raw format.
+    This returns the raw dictionary format compatible with calculate_net_transforms().
+    """
+    view_transforms = extract_tile_transforms(xml_path)
+
+    nominal_and_stitching_transforms = {}
+    
+    for view_id, transform_list in view_transforms.items():
+        # Look for the second transform in the list
+        nominal_and_stitching_transforms[view_id] = []
+        for transform in transform_list: 
+            if transform["Name"] == "Translation to Nominal Grid": 
+                nominal_and_stitching_transforms[view_id].append(transform)
+            elif transform["Name"] == "Stitching Transform": 
+                nominal_and_stitching_transforms[view_id].append(transform)
+            else: 
+                raise ValueError(f"No expected transform names found in xml {xml_path}")
+
+    return nominal_and_stitching_transforms
+
+
 def extract_second_affine_transforms_raw(xml_path: str) -> dict[int, list[dict]]:
     """
     Extract only the second affine transformation from each tile's transform stack in raw format.
@@ -231,6 +272,28 @@ def calculate_net_transforms(
 
     return net_transforms
 
+def load_and_calculate_stitching_transforms(xml_path: str) -> dict:
+    """
+    Load XML file and calculate net transforms for all tiles.
+    
+    Parameters
+    ----------
+    xml_path : str
+        Path to XML file containing transforms
+        
+    Returns
+    -------
+    dict
+        Dictionary mapping tile names/IDs to net transforms
+    """
+    # Extract raw transforms from XML
+    view_transforms = extract_nominal_and_stitching_transforms(xml_path)
+    
+    # Calculate net transforms - only necessary if accumulating multiple transforms
+    net_transforms = calculate_net_transforms(view_transforms)
+    
+    return net_transforms
+
 def load_and_calculate_transforms(xml_path: str) -> dict:
     """
     Load XML file and calculate net transforms for all tiles.
@@ -253,74 +316,81 @@ def load_and_calculate_transforms(xml_path: str) -> dict:
     
     return net_transforms
 
-def apply_transform_to_tile(tile_array: da.Array, tile_name: str, transforms: dict, xml_path: str) -> da.Array:
-    """
-    Apply affine transform to a dask array tile using dask_image.
+# def apply_transform_to_tile(tile_array: da.Array, tile_name: str, transforms: dict, xml_path: str) -> da.Array:
+#     """
+#     Apply affine transform to a dask array tile using dask_image.
     
-    Parameters
-    ----------
-    tile_array : da.Array
-        Dask array containing tile data (5D: T,C,Z,Y,X)
-    tile_name : str
-        Name of the tile for transform lookup
-    transforms : dict
-        Dictionary of transforms
+#     Parameters
+#     ----------
+#     tile_array : da.Array
+#         Dask array containing tile data (5D: T,C,Z,Y,X)
+#     tile_name : str
+#         Name of the tile for transform lookup
+#     transforms : dict
+#         Dictionary of transforms
 
-    Note: BigStitcher XML uses XYZ mode, scipy uses ZYX mode with backward transforms
-    """
-    def convert_xyz_mat_to_zyx(affine_mat):
-        """Convert 4x4 affine from XYZ to ZYX coordinate ordering"""
-        shuffled_rows = affine_mat[[2, 1, 0, 3], :]
-        shuffled_cols = shuffled_rows[:, [2, 1, 0, 3]]
-        return shuffled_cols
+#     Note: BigStitcher XML uses XYZ mode, scipy uses ZYX mode with backward transforms
+#     """
+#     def convert_xyz_mat_to_zyx(affine_mat):
+#         """Convert 4x4 affine from XYZ to ZYX coordinate ordering"""
+#         shuffled_rows = affine_mat[[2, 1, 0, 3], :]
+#         shuffled_cols = shuffled_rows[:, [2, 1, 0, 3]]
+#         return shuffled_cols
     
-    print(f'tile name {tile_name}')
-    print(f'transforms {transforms}')
+#     print(f'tile name {tile_name}')
+#     print(f'transforms {transforms}')
 
-    # Find the appropriate transform for this tile
-    if tile_name in transforms:
-        transform_matrix = transforms[tile_name]
-    else:
-        data = load_xml(xml_path)
-        tile_id = get_tile_id_from_name(data, tile_name)
-        transform_matrix = transforms[tile_id]
+#     # Find the appropriate transform for this tile
+#     if tile_name in transforms:
+#         transform_matrix = transforms[tile_name]
+#     else:
+#         data = load_xml(xml_path)
+#         tile_id = get_tile_id_from_name(data, tile_name)
+#         transform_matrix = transforms[tile_id]
     
-    if transform_matrix is None:
-        print(f"Warning: No transform found for tile {tile_name}")
-        return tile_array
+#     if transform_matrix is None:
+#         print(f"Warning: No transform found for tile {tile_name}")
+#         return tile_array
     
-    print(f"Applying transform to tile {tile_name}")
+#     print(f"Applying transform to tile {tile_name}")
     
-    # Reorder XYZ to ZYX
-    transform_matrix = np.vstack([transform_matrix, [0, 0, 0, 1]])
-    transform_matrix_reordered = convert_xyz_mat_to_zyx(transform_matrix)
+#     # Reorder XYZ to ZYX
+#     transform_matrix = np.vstack([transform_matrix, [0, 0, 0, 1]])
+#     transform_matrix_reordered = convert_xyz_mat_to_zyx(transform_matrix)
     
-    # For inversion, we need to work with the full 4x4 homogeneous form
-    # Convert 3x4 to 4x4 by adding [0, 0, 0, 1] row
+#     # For inversion, we need to work with the full 4x4 homogeneous form
+#     # Convert 3x4 to 4x4 by adding [0, 0, 0, 1] row
     
 
-    # Invert for scipy/dask affine_transform (uses backward transform)
-    # transform_matrix_inv = np.linalg.inv(transform_matrix_reordered)
+#     # Invert for scipy/dask affine_transform (uses backward transform)
+#     # transform_matrix_inv = np.linalg.inv(transform_matrix_reordered)
 
     
-    # Extract 3D transform components (not 2D!)
-    matrix_3d = transform_matrix_reordered[:3, :3]  # 3x3 linear transform
-    offset_3d = transform_matrix_reordered[:3, 3]   # 3D translation vector
+#     # Extract 3D transform components (not 2D!)
+#     matrix_3d = transform_matrix_reordered[:3, :3]  # 3x3 linear transform
+#     offset_3d = transform_matrix_reordered[:3, 3]   # 3D translation vector
     
-    # Extract 3D volume from 5D array
-    volume_3d = tile_array[0, 0, :, :, :]  # (Z,Y,X)
+#     # Extract 3D volume from 5D array
+#     volume_3d = tile_array[0, 0, :, :, :]  # (Z,Y,X)
     
-    # Apply 3D affine transform to entire volume at once
-    transformed_3d = dask_image.ndinterp.affine_transform(
-        volume_3d,
-        matrix=matrix_3d,
-        offset=offset_3d,
-        order=1,  # linear interpolation (or 0 for nearest, 3 for cubic)
-        mode='constant',
-        cval=0.0
-    )
+#     # Apply 3D affine transform to entire volume at once
+#     transformed_3d = dask_image.ndinterp.affine_transform(
+#         volume_3d,
+#         matrix=matrix_3d,
+#         offset=offset_3d,
+#         order=1,  # linear interpolation (or 0 for nearest, 3 for cubic)
+#         mode='constant',
+#         cval=0.0
+#     )
     
-    # Restore 5D shape
-    transformed_5d = transformed_3d[np.newaxis, np.newaxis, :, :, :]
+#     # Restore 5D shape
+#     transformed_5d = transformed_3d[np.newaxis, np.newaxis, :, :, :]
     
-    return transformed_5d
+#     return transformed_5d
+
+def debug(): 
+    xml_path = "/root/capsule/data/HCR_799211_2025-10-21_15-45-00_processed_2025-10-30_22-28-13/image_tile_alignment/combined_stitching_cam_alignment_all_channels.xml"
+    test_transforms = extract_nominal_and_stitching_transforms(xml_path)
+    print(f'test {test_transforms}')
+if __name__ == "__main__": 
+    debug()
