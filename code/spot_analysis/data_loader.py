@@ -3,6 +3,8 @@ import pandas as pd
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 from .config import Config
+from utils.transform_utils import apply_stitching_to_points
+
 
 class SpotDataLoader:
     def __init__(self):
@@ -47,7 +49,6 @@ class SpotDataLoader:
         utils_path = Path(__file__).parent.parent / 'utils'
         if str(utils_path) not in sys.path:
             sys.path.insert(0, str(utils_path))
-        from transform_utils import apply_stitching_to_points
         
         tile_name = self.config.CURRENT_TILE
         if tile_name is None:
