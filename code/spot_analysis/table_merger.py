@@ -151,110 +151,76 @@ class TableMerger:
         self,
         round_n: Optional[int] = None,
         min_dist: Optional[int] = None
-    ) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]]:
+    ) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame], Optional[pd.DataFrame]]:
         """
-        Merge all unmixed spot tables from individual tiles.
+        Merge all unmixed and mixed spot tables from individual tiles.
         
         Args:
             round_n: Round number (uses Config.ROUND_N if not specified)
             min_dist: Minimum distance value (uses default if not specified)
             
         Returns:
-            Tuple of (merged output dataframe, merged scratch dataframe)
+            Tuple of (merged unmixed output, merged unmixed scratch, merged mixed output, merged mixed scratch)
         """
         round_n = round_n or self.config.ROUND_N
         min_dist = min_dist or 3
         
+        # UNMIXED SPOTS
         # Build pattern for unmixed spots
-        pattern = f'unmixed_spots_R{round_n}'
+        unmixed_pattern = f'unmixed_spots_R{round_n}'
         if min_dist:
             # Find files with specific minDist
-            full_pattern = f'{pattern}*_tile_*_minDist_{min_dist}'
+            unmixed_full_pattern = f'{unmixed_pattern}*_tile_*_minDist_{min_dist}'
         else:
-            full_pattern = f'{pattern}*_tile_*'
+            unmixed_full_pattern = f'{unmixed_pattern}*_tile_*'
         
-        # Merge from output folder
-        output_files = []
-        for file_path in self.config.OUTPUT_FOLDER.glob(f"{full_pattern}.pkl"):
-            output_files.append(file_path)
+        # Merge unmixed from output folder
+        unmixed_output_files = []
+        for file_path in self.config.OUTPUT_FOLDER.glob(f"{unmixed_full_pattern}.pkl"):
+            unmixed_output_files.append(file_path)
         
-        output_merged = None
-        if output_files:
+        unmixed_output_merged = None
+        if unmixed_output_files:
             output_path = self.config.OUTPUT_FOLDER / f'unmixed_spots_R{round_n}_merged_minDist_{min_dist}.pkl'
-            output_merged = self.merge_pickle_tables(output_files, output_path)
+            unmixed_output_merged = self.merge_pickle_tables(unmixed_output_files, output_path)
         
-        # Merge from scratch folder
-        scratch_files = []
-        for file_path in self.config.SCRATCH_FOLDER.glob(f"{full_pattern}.pkl"):
-            scratch_files.append(file_path)
+
+        # MIXED SPOTS
+        # Build pattern for mixed spots
+        mixed_pattern = f'mixed_spots_R{round_n}'
+        mixed_full_pattern = f'{mixed_pattern}*_tile_*'
         
-        scratch_merged = None
-        if scratch_files:
-            scratch_path = self.config.SCRATCH_FOLDER / f'unmixed_spots_R{round_n}_merged_minDist_{min_dist}.pkl'
-            scratch_merged = self.merge_pickle_tables(scratch_files, scratch_path)
+        # Merge mixed from output folder
+        mixed_output_files = []
+        for file_path in self.config.OUTPUT_FOLDER.glob(f"{mixed_full_pattern}.pkl"):
+            mixed_output_files.append(file_path)
         
-        return output_merged, scratch_merged
-    
-    def merge_all_cell_by_gene_tables(self) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]]:
-        """
-        Merge all cell-by-gene tables (both unmixed and mixed) from individual tiles.
+        mixed_output_merged = None
+        if mixed_output_files:
+            output_path = self.config.OUTPUT_FOLDER / f'mixed_spots_R{round_n}_merged.pkl'
+            mixed_output_merged = self.merge_pickle_tables(mixed_output_files, output_path)
         
-        Returns:
-            Tuple of (merged unmixed dataframe, merged mixed dataframe)
-        """
-        # Merge unmixed cell-by-gene tables (CSV)
-        unmixed_csv_files = self.find_tile_tables(
-            self.config.OUTPUT_FOLDER,
-            'unmixed_cell_by_gene',
-            '.csv'
-        )
-        unmixed_merged = None
-        if unmixed_csv_files:
-            output_path = self.config.OUTPUT_FOLDER / 'unmixed_cell_by_gene_merged.csv'
-            unmixed_merged = self.merge_csv_tables(unmixed_csv_files, output_path)
-            
-            # Also save pickle version from scratch folder
-            unmixed_pkl_files = self.find_tile_tables(
-                self.config.SCRATCH_FOLDER,
-                'unmixed_cell_by_gene',
-                '.pkl'
-            )
-            if unmixed_pkl_files:
-                scratch_path = self.config.SCRATCH_FOLDER / 'unmixed_cell_by_gene_merged.pkl'
-                self.merge_pickle_tables(unmixed_pkl_files, scratch_path)
+        # Merge mixed from scratch folder
+        mixed_scratch_files = []
+        for file_path in self.config.SCRATCH_FOLDER.glob(f"{mixed_full_pattern}.pkl"):
+            mixed_scratch_files.append(file_path)
         
-        # Merge mixed cell-by-gene tables (CSV)
-        mixed_csv_files = self.find_tile_tables(
-            self.config.OUTPUT_FOLDER,
-            'mixed_cell_by_gene',
-            '.csv'
-        )
-        mixed_merged = None
-        if mixed_csv_files:
-            output_path = self.config.OUTPUT_FOLDER / 'mixed_cell_by_gene_merged.csv'
-            mixed_merged = self.merge_csv_tables(mixed_csv_files, output_path)
-            
-            # Also save pickle version from scratch folder
-            mixed_pkl_files = self.find_tile_tables(
-                self.config.SCRATCH_FOLDER,
-                'mixed_cell_by_gene',
-                '.pkl'
-            )
-            if mixed_pkl_files:
-                scratch_path = self.config.SCRATCH_FOLDER / 'mixed_cell_by_gene_merged.pkl'
-                self.merge_pickle_tables(mixed_pkl_files, scratch_path)
+        mixed_scratch_merged = None
+        if mixed_scratch_files:
+            scratch_path = self.config.SCRATCH_FOLDER / f'mixed_spots_R{round_n}_merged.pkl'
+            mixed_scratch_merged = self.merge_pickle_tables(mixed_scratch_files, scratch_path)
         
-        return unmixed_merged, mixed_merged
+        return unmixed_output_merged, mixed_output_merged, mixed_scratch_merged
     
     def merge_all_tables(
         self,
         min_dist: Optional[int] = None
     ) -> dict:
         """
-        Merge all types of tables (spot tables and cell-by-gene tables).
+        Merge all types of tables (unmixed and mixed spot tables).
         
         Args:
-            min_dist: Minimum distance value for spot tables
+            min_dist: Minimum distance value for unmixed spot tables
             
         Returns:
             Dictionary with merged dataframes
@@ -263,26 +229,28 @@ class TableMerger:
         
         self.logger.info("Starting table merge process...")
         
-        # Merge spot tables
-        self.logger.info("\nMerging unmixed spot tables...")
-        spot_output, spot_scratch = self.merge_all_spot_tables(min_dist=min_dist)
-        results['unmixed_spots'] = spot_output
-        
-        # Merge cell-by-gene tables
-        self.logger.info("\nMerging cell-by-gene tables...")
-        unmixed_cbg, mixed_cbg = self.merge_all_cell_by_gene_tables()
-        results['unmixed_cell_by_gene'] = unmixed_cbg
-        results['mixed_cell_by_gene'] = mixed_cbg
+        # Merge spot tables (both unmixed and mixed)
+        self.logger.info("\nMerging spot tables...")
+        unmixed_output, mixed_output, mixed_scratch = self.merge_all_spot_tables(min_dist=min_dist)
+        results['unmixed_spots_output'] = unmixed_output
+        results['mixed_spots_output'] = mixed_output
+        results['mixed_spots_scratch'] = mixed_scratch
         
         # Summary
         self.logger.info("\n" + "="*80)
         self.logger.info("MERGE SUMMARY")
         self.logger.info("="*80)
-        for key, df in results.items():
-            if df is not None:
-                self.logger.info(f"{key}: {len(df)} rows")
-            else:
-                self.logger.info(f"{key}: No data merged")
+        
+        if unmixed_output is not None:
+            self.logger.info(f"Unmixed spots (output): {len(unmixed_output)} rows")
+        else:
+            self.logger.info("Unmixed spots (output): No data merged")
+        
+        if mixed_output is not None:
+            self.logger.info(f"Mixed spots (output): {len(mixed_output)} rows")
+        else:
+            self.logger.info("Mixed spots (output): No data merged")
+            
         self.logger.info("="*80 + "\n")
         
         return results
