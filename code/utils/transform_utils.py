@@ -1,33 +1,54 @@
 import numpy as np
 import boto3
 import xmltodict
-from scipy import ndimage
 from collections import defaultdict, OrderedDict
 
 
-def apply_stitching_to_points(points: np.array, xml_path: str): 
+def apply_stitching_to_points(points: np.ndarray, tile_name: str, xml_path: str) -> np.ndarray: 
     """
     Applies transforms to a big list of points representing the individual spots. 
     
     Parameters: 
     -----------
-    points: nd.ndarray
-    Array in format [[X,Y,Z], [X2,Y2,Z2]....[Xn, Yn, Zn]]
+    points: np.ndarray
+        Array in format [[X,Y,Z], [X2,Y2,Z2]....[Xn, Yn, Zn]] (N x 3)
+    
+    tile_name: str
+        Name of the tile to get the transform for
     
     xml_path: str
-    path to xml to get stitching and nominal transforms from 
+        Path to xml to get stitching and nominal transforms from 
 
     Returns: 
     --------
     transformed_points: np.ndarray
-    XYZ locations in stitched coordinate space
+        XYZ locations in stitched coordinate space (N x 3)
 
     """
-    #points are in XYZ format
+    # Points are in XYZ format
+    if points.shape[0] == 0:
+        return points
     
-    transforms = load_and_calculate_stitching_transforms(xml_path)
+    # Load all transforms from XML
+    transforms_dict = load_and_calculate_stitching_transforms(xml_path)
     
-    transformed_points = transforms @ points 
+    # Get the tile ID from the tile name
+    data = load_xml(xml_path)
+    tile_id = get_tile_id_from_name(data, tile_name)
+    
+    # Get the transform matrix for this specific tile
+    if tile_id not in transforms_dict:
+        raise ValueError(f"No transform found for tile {tile_name} (ID: {tile_id})")
+    
+    transform_matrix = transforms_dict[tile_id]  # This is a 3x4 matrix
+    
+    # Apply affine transformation: transformed = transform_matrix @ [points; 1]
+    # Add homogeneous coordinate (column of ones)
+    points_homogeneous = np.hstack([points, np.ones((points.shape[0], 1))])  # N x 4
+    
+    # Apply transform: (3x4) @ (4xN) = (3xN), then transpose to get Nx3
+    transformed_points = (transform_matrix @ points_homogeneous.T).T  # N x 3
+    
     return transformed_points
 
 

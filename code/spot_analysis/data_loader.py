@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 from .config import Config
 
 class SpotDataLoader:
@@ -13,6 +13,80 @@ class SpotDataLoader:
         ]
         self.tile_col = 'tile_name'
     
+    def apply_stitching_transform_to_spots(self, spots_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Apply stitching transforms to spot coordinates.
+        Preserves original tile-space coordinates and adds stitched global coordinates.
+        
+        Parameters:
+        -----------
+        spots_df: pd.DataFrame
+            DataFrame with spot data including x, y, z, x_center, y_center, z_center columns
+            
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame with additional columns for stitched coordinates and original tile coordinates
+        """
+        if not self.config.APPLY_STITCHING_TRANSFORM:
+            return spots_df
+            
+        if self.config.STITCHING_XML_PATH is None:
+            print("Warning: APPLY_STITCHING_TRANSFORM is True but no STITCHING_XML_PATH provided. Skipping transform.")
+            return spots_df
+            
+        if not Path(self.config.STITCHING_XML_PATH).exists():
+            print(f"Warning: XML path does not exist: {self.config.STITCHING_XML_PATH}. Skipping transform.")
+            return spots_df
+        
+        if spots_df.empty:
+            return spots_df
+            
+        # Import transform utilities
+        import sys
+        utils_path = Path(__file__).parent.parent / 'utils'
+        if str(utils_path) not in sys.path:
+            sys.path.insert(0, str(utils_path))
+        from transform_utils import apply_stitching_to_points
+        
+        tile_name = self.config.CURRENT_TILE
+        if tile_name is None:
+            print("Warning: No current tile set. Skipping transform.")
+            return spots_df
+        
+        # Store original tile-space coordinates
+        spots_df['x_tile'] = spots_df['x'].copy()
+        spots_df['y_tile'] = spots_df['y'].copy()
+        spots_df['z_tile'] = spots_df['z'].copy()
+        spots_df['x_center_tile'] = spots_df['x_center'].copy()
+        spots_df['y_center_tile'] = spots_df['y_center'].copy()
+        spots_df['z_center_tile'] = spots_df['z_center'].copy()
+        
+        # Apply transform to spot locations (x, y, z)
+        points_xyz = spots_df[['x', 'y', 'z']].values  # N x 3
+        transformed_xyz = apply_stitching_to_points(
+            points_xyz, 
+            tile_name, 
+            self.config.STITCHING_XML_PATH
+        )
+        spots_df['x'] = transformed_xyz[:, 0]
+        spots_df['y'] = transformed_xyz[:, 1]
+        spots_df['z'] = transformed_xyz[:, 2]
+        
+        # Apply transform to spot centers (x_center, y_center, z_center)
+        points_center = spots_df[['x_center', 'y_center', 'z_center']].values  # N x 3
+        transformed_center = apply_stitching_to_points(
+            points_center, 
+            tile_name, 
+            self.config.STITCHING_XML_PATH
+        )
+        spots_df['x_center'] = transformed_center[:, 0]
+        spots_df['y_center'] = transformed_center[:, 1]
+        spots_df['z_center'] = transformed_center[:, 2]
+        
+        print(f"Applied stitching transform to {len(spots_df)} spots from tile {tile_name}")
+        
+        return spots_df
 
     def load_multichannel_data(self, ch: str, m_ch: str) -> pd.DataFrame:
         
@@ -178,4 +252,8 @@ class SpotDataLoader:
 
         if not mixed_spots_df.empty:
             mixed_spots_df[self.tile_col] = self.config.CURRENT_TILE
+            
+        # Apply stitching transforms if enabled
+        mixed_spots_df = self.apply_stitching_transform_to_spots(mixed_spots_df)
+            
         return mixed_spots_df    

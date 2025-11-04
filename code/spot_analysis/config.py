@@ -12,6 +12,8 @@ class Config:
     OUTPUT_FOLDER = pathlib.Path('/results/')
     OUTPUT_DATA_TYPE = 'zarr'
     SCRATCH_FOLDER = pathlib.Path('/scratch/')
+    STITCHING_XML_PATH: Optional[str] = DATA_FOLDER.joinpath('image_tile_alignment/combined_stitching_cam_alignment_all_channels.xml').as_posix()  # Path to XML file with stitching transforms
+    APPLY_STITCHING_TRANSFORM: bool = True  # Flag to enable/disable stitching transforms
     
     # Processing parameters
     _default_ROUND_N = 0
