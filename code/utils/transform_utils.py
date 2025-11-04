@@ -192,7 +192,8 @@ def extract_nominal_and_stitching_transforms(xml_path: str) -> dict[int, list[di
             elif transform["Name"] == "Stitching Transform": 
                 nominal_and_stitching_transforms[view_id].append(transform)
             else: 
-                raise ValueError(f"No expected transform names found in xml {xml_path}")
+                continue
+                # raise ValueError(f"No expected transform names found in xml {xml_path}")
 
     return nominal_and_stitching_transforms
 
