@@ -6,6 +6,7 @@ import traceback
 
 from process_round import SpotAnalysisPipeline
 from spot_analysis.config import Config
+from spot_analysis.table_merger import TableMerger
 
 
 class TileProcessor:
@@ -86,7 +87,26 @@ class TileProcessor:
             self._print_tile_summary(tile_name, tile_results)
 
         self._print_final_summary(successful_tiles, failed_tiles, all_results)
+        
+        # Merge all tile tables into combined tables
+        if len(successful_tiles) > 1:
+            self._merge_tile_tables()
+        
         return all_results
+    
+    def _merge_tile_tables(self) -> None:
+        """Merge all single-tile tables into combined multi-tile tables."""
+        print("\n" + "=" * 80)
+        print("MERGING TILE TABLES")
+        print("=" * 80)
+        
+        merger = TableMerger()
+        
+        # Merge all table types
+        merged_results = merger.merge_all_tables(min_dist=self.min_distances[0])
+        
+        print("\nTable merge complete.")
+        print("=" * 80 + "\n")
 
     def _print_tile_summary(self, tile_name: str, tile_results: Dict[float, Any]) -> None:
         """Print per-tile summary statistics."""
