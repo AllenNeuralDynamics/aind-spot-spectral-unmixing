@@ -176,7 +176,7 @@ class TableMerger:
         
         # Merge unmixed from output folder
         unmixed_output_files = []
-        for file_path in self.config.OUTPUT_FOLDER.glob(f"{unmixed_full_pattern}.pkl"):
+        for file_path in self.config.OUTPUT_FOLDER.glob(f"**/{unmixed_full_pattern}.pkl"):
             unmixed_output_files.append(file_path)
         
         unmixed_output_merged = None
@@ -192,7 +192,7 @@ class TableMerger:
         
         # Merge mixed from output folder
         mixed_output_files = []
-        for file_path in self.config.OUTPUT_FOLDER.glob(f"{mixed_full_pattern}.pkl"):
+        for file_path in self.config.OUTPUT_FOLDER.glob(f"**/{mixed_full_pattern}.pkl"):
             mixed_output_files.append(file_path)
         
         mixed_output_merged = None
@@ -202,7 +202,7 @@ class TableMerger:
         
         # Merge mixed from scratch folder
         mixed_scratch_files = []
-        for file_path in self.config.SCRATCH_FOLDER.glob(f"{mixed_full_pattern}.pkl"):
+        for file_path in self.config.SCRATCH_FOLDER.glob(f"**/{mixed_full_pattern}.pkl"):
             mixed_scratch_files.append(file_path)
         
         mixed_scratch_merged = None
