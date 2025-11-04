@@ -181,7 +181,7 @@ class TableMerger:
         
         unmixed_output_merged = None
         if unmixed_output_files:
-            output_path = self.config.OUTPUT_FOLDER / f'unmixed_spots_R{round_n}_merged_minDist_{min_dist}.pkl'
+            output_path = Path(self.config.OUTPUT_FOLDER).parent / f'unmixed_spots_R{round_n}_merged_minDist_{min_dist}.pkl'
             unmixed_output_merged = self.merge_pickle_tables(unmixed_output_files, output_path)
         
 
@@ -197,7 +197,7 @@ class TableMerger:
         
         mixed_output_merged = None
         if mixed_output_files:
-            output_path = self.config.OUTPUT_FOLDER / f'mixed_spots_R{round_n}_merged.pkl'
+            output_path = Path(self.config.OUTPUT_FOLDER).parent / f'mixed_spots_R{round_n}_merged.pkl'
             mixed_output_merged = self.merge_pickle_tables(mixed_output_files, output_path)
         
         # Merge mixed from scratch folder
