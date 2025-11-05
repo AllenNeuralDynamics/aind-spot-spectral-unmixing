@@ -163,16 +163,13 @@ class TableMerger:
             Tuple of (merged unmixed output, merged unmixed scratch, merged mixed output, merged mixed scratch)
         """
         round_n = round_n or self.config.ROUND_N
-        min_dist = min_dist or 3
+        min_dist = min_dist or self.config.min_dist
         
         # UNMIXED SPOTS
         # Build pattern for unmixed spots
         unmixed_pattern = f'unmixed_spots_R{round_n}'
-        if min_dist:
-            # Find files with specific minDist
-            unmixed_full_pattern = f'{unmixed_pattern}*_tile_*_minDist_{min_dist}'
-        else:
-            unmixed_full_pattern = f'{unmixed_pattern}*_tile_*'
+   
+        unmixed_full_pattern = f'{unmixed_pattern}*_tile_*'
         
         # Merge unmixed from output folder
         unmixed_output_files = []
