@@ -150,8 +150,7 @@ class Config:
             print('Didn\'t find pipeline processing manifest')
             manifest_path = list(pathlib.Path(cls.DATA_FOLDER).glob("*/derived/processing_manifest.json"))
             if not len(manifest_path):
-                 manifest_path = list(pathlib.Path(cls.DATA_FOLDER).glob("processing_manifest.json"))
-        
+                manifest_path = list(pathlib.Path(cls.DATA_FOLDER).glob("processing_manifest.json"))
                 if not len(manifest_path):
                     print('Didn\'t find v2 processing manifest')
                     manifest_path = list(pathlib.Path(cls.DATA_FOLDER).glob("*/processing_manifest.json"))
