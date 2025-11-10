@@ -48,6 +48,8 @@ def apply_stitching_to_points(points: np.ndarray, tile_name: str, xml_path: str)
     
     # Apply transform: (3x4) @ (4xN) = (3xN), then transpose to get Nx3
     transformed_points = (transform_matrix @ points_homogeneous.T).T  # N x 3
+
+    #TODO apply camera correction to these points as well? Seems they are off in Phase correlation ng
     
     return transformed_points
 
@@ -190,6 +192,8 @@ def extract_nominal_and_stitching_transforms(xml_path: str) -> dict[int, list[di
             if transform["Name"] == "Translation to Nominal Grid": 
                 nominal_and_stitching_transforms[view_id].append(transform)
             elif transform["Name"] == "Stitching Transform": 
+                nominal_and_stitching_transforms[view_id].append(transform)
+            elif transform["Name"] == "Camera Alignment Affine": 
                 nominal_and_stitching_transforms[view_id].append(transform)
             else: 
                 continue
