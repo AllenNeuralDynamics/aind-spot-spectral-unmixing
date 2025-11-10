@@ -50,7 +50,7 @@ class TileProcessor:
                 spots_folder=tile_spots_folder,
                 output_folder=self.output_folder.joinpath(tile_name),
                 min_distances=self.min_distances, 
-                tile_name = tile_name
+                Config = self.config
             )
             tile_results = pipeline.run()
 

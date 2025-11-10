@@ -28,7 +28,7 @@ class SpotAnalysisPipeline:
         spots_folder: Path = Path('/data/'),
         output_folder: Path = Path('/results/'),
         min_distances: Optional[List[float]] = None,
-        tile_name: Optional[str] = None  
+        Config = None:
 
     ):
         """
@@ -43,15 +43,16 @@ class SpotAnalysisPipeline:
         # Update configuration
         #Config.ROUND_N = round_number
         #Config = Config()
+        
+       
+        if run_Config == None: 
+            self.config = Config()
         Config.SPOTS_FOLDER = spots_folder
         # Config.DATA_FOLDER = Path('/data/').as_posix(),
         Config.OUTPUT_FOLDER = output_folder
         Config.OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
         Config.SCRATCH_FOLDER.mkdir(parents=True, exist_ok=True)
                 # SET THE CURRENT TILE!
-        if tile_name:
-            Config.CURRENT_TILE = tile_name
-        self.config = Config()
         
         # Set default min distances if not provided
         self.min_distances = min_distances or [3.0, 4.0, 5.0]
