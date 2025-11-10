@@ -175,7 +175,7 @@ class TableMerger:
         self.logger.info(f"\nMerging unmixed spot tables for min_dist={min_dist}...")
         self.logger.info(f"searching in {self.config.OUTPUT_FOLDER} for pattern '**/{unmixed_full_pattern}.pkl'")
         unmixed_output_files = []
-        for file_path in self.config.OUTPUT_FOLDER.glob(f"**/{unmixed_full_pattern}.pkl"):
+        for file_path in self.config.OUTPUT_FOLDER.parent.glob(f"**/{unmixed_full_pattern}.pkl"):
             unmixed_output_files.append(file_path)
         
         self.logger.info(f"Found {len(unmixed_output_files)} unmixed spot files to merge")
