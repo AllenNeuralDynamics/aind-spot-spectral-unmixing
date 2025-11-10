@@ -42,14 +42,14 @@ def apply_stitching_to_points(points: np.ndarray, tile_name: str, xml_path: str)
     
     transform_matrix = transforms_dict[tile_id]  # This is a 3x4 matrix
     
+    #invert because points like forward transform, bigstitcher likes backwards transform
+    transform_matrix = np.linalg.inv(transform_matrix)
     # Apply affine transformation: transformed = transform_matrix @ [points; 1]
     # Add homogeneous coordinate (column of ones)
     points_homogeneous = np.hstack([points, np.ones((points.shape[0], 1))])  # N x 4
     
     # Apply transform: (3x4) @ (4xN) = (3xN), then transpose to get Nx3
     transformed_points = (transform_matrix @ points_homogeneous.T).T  # N x 3
-
-    #TODO apply camera correction to these points as well? Seems they are off in Phase correlation ng
     
     return transformed_points
 
@@ -193,8 +193,8 @@ def extract_nominal_and_stitching_transforms(xml_path: str) -> dict[int, list[di
                 nominal_and_stitching_transforms[view_id].append(transform)
             elif transform["Name"] == "Stitching Transform": 
                 nominal_and_stitching_transforms[view_id].append(transform)
-            elif transform["Name"] == "Camera Alignment Affine": 
-                nominal_and_stitching_transforms[view_id].append(transform)
+            # elif transform["Name"] == "Camera Alignment Affine": 
+            #     nominal_and_stitching_transforms[view_id].append(transform)
             else: 
                 continue
                 # raise ValueError(f"No expected transform names found in xml {xml_path}")
