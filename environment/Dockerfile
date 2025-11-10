@@ -1,4 +1,4 @@
-# hash:sha256:eafcaad5be81a5bbbd32a661990cb9e322395c5c3412a78e79fa055dad1af153
+# hash:sha256:39d26724524d7b6f94d2105a77d413c21538d1776d9beb93ba6f5444cf5ba043
 ARG REGISTRY_HOST
 FROM $REGISTRY_HOST/codeocean/lightning-jupyterlab-py39:1.0
 
@@ -20,3 +20,18 @@ RUN pip install -U --no-cache-dir \
     tqdm-joblib==0.0.4 \
     xmltodict==1.0.2 \
     zarr==2.18.2
+
+ADD "https://github.com/coder/code-server/releases/download/v4.100.3/code-server-4.100.3-linux-amd64.tar.gz" /.code-server/code-server.tar.gz
+	
+RUN cd /.code-server \
+    && tar -xvf code-server.tar.gz \
+    && rm code-server.tar.gz \
+    && ln -s /.code-server/code-server-4.100.3-linux-amd64/bin/code-server /usr/bin/code-server \
+    && mkdir -p /.vscode/extensions
+
+RUN code-server --extensions-dir="/.vscode/extensions" --install-extension continue.continue \
+    && code-server --extensions-dir="/.vscode/extensions" --install-extension ms-python.python \
+    && code-server --extensions-dir="/.vscode/extensions" --install-extension ms-toolsai.jupyter \
+    && code-server --extensions-dir="/.vscode/extensions" --install-extension reageyao.biosyntax \
+    && code-server --extensions-dir="/.vscode/extensions" --install-extension reditorsupport.r \
+    && code-server --extensions-dir="/.vscode/extensions" --install-extension saoudrizwan.claude-dev
