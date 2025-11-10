@@ -28,8 +28,7 @@ class SpotAnalysisPipeline:
         spots_folder: Path = Path('/data/'),
         output_folder: Path = Path('/results/'),
         min_distances: Optional[List[float]] = None,
-        Config = None:
-
+        Config = None
     ):
         """
         Initialize the spot analysis pipeline.
