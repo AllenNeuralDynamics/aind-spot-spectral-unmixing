@@ -42,7 +42,7 @@ class SpotAnalysisPipeline:
         #Config.ROUND_N = round_number
         #Config = Config()
         Config.SPOTS_FOLDER = spots_folder
-        Config.DATA_FOLDER = Path('/data/').as_posix(),
+        # Config.DATA_FOLDER = Path('/data/').as_posix(),
         Config.OUTPUT_FOLDER = output_folder
         Config.OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
         Config.SCRATCH_FOLDER.mkdir(parents=True, exist_ok=True)
