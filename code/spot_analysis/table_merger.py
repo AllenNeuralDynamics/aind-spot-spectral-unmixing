@@ -150,7 +150,7 @@ class TableMerger:
     def merge_all_spot_tables(
         self,
         round_n: Optional[int] = None,
-        min_dist: Optional[int] = None
+        min_dist: Optional[float] = None
     ) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame], Optional[pd.DataFrame]]:
         """
         Merge all unmixed and mixed spot tables from individual tiles.
@@ -160,7 +160,7 @@ class TableMerger:
             min_dist: Minimum distance value (uses default if not specified)
             
         Returns:
-            Tuple of (merged unmixed output, merged unmixed scratch, merged mixed output, merged mixed scratch)
+            Tuple of (merged unmixed output, merged mixed output, merged mixed scratch)
         """
         round_n = round_n or self.config.ROUND_N
         min_dist = min_dist or self.config.min_dist
@@ -171,10 +171,14 @@ class TableMerger:
    
         unmixed_full_pattern = f'{unmixed_pattern}*_tile_*'
         
-        # Merge unmixed from output folder
+        # Merge unmixed from output folder - search recursively for tile subfolders
+        self.logger.info(f"\nMerging unmixed spot tables for min_dist={min_dist}...")
+        self.logger.info(f"searching in {self.config.OUTPUT_FOLDER} for pattern '**/{unmixed_full_pattern}.pkl'")
         unmixed_output_files = []
         for file_path in self.config.OUTPUT_FOLDER.glob(f"**/{unmixed_full_pattern}.pkl"):
             unmixed_output_files.append(file_path)
+        
+        self.logger.info(f"Found {len(unmixed_output_files)} unmixed spot files to merge")
         
         unmixed_output_merged = None
         if unmixed_output_files:
@@ -187,10 +191,12 @@ class TableMerger:
         mixed_pattern = f'mixed_spots_R{round_n}'
         mixed_full_pattern = f'{mixed_pattern}*_tile_*'
         
-        # Merge mixed from output folder
+        # Merge mixed from output folder - search recursively for tile subfolders
         mixed_output_files = []
         for file_path in self.config.OUTPUT_FOLDER.glob(f"**/{mixed_full_pattern}.pkl"):
             mixed_output_files.append(file_path)
+        
+        self.logger.info(f"Found {len(mixed_output_files)} mixed spot files to merge")
         
         mixed_output_merged = None
         if mixed_output_files:
@@ -211,7 +217,7 @@ class TableMerger:
     
     def merge_all_tables(
         self,
-        min_dist: Optional[int] = None
+        min_dist: Optional[float] = None
     ) -> dict:
         """
         Merge all types of tables (unmixed and mixed spot tables).
