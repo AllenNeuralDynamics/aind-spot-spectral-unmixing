@@ -6,26 +6,42 @@ from collections import defaultdict, OrderedDict
 
 def apply_stitching_to_points(points: np.ndarray, tile_name: str, xml_path: str) -> np.ndarray: 
     """
-    Applies transforms to a big list of points representing the individual spots. 
+    Applies stitching transforms to point coordinates.
     
-    Parameters: 
-    -----------
-    points: np.ndarray
-        Array in format [[X,Y,Z], [X2,Y2,Z2]....[Xn, Yn, Zn]] (N x 3)
+    This function transforms point coordinates from tile-local space to stitched
+    (global) coordinate space using affine transformations loaded from BigStitcher XML.
+    The inverse transform is applied because BigStitcher stores backward transforms
+    (global->local) while we need forward transforms (local->global) for points.
     
-    tile_name: str
-        Name of the tile to get the transform for
+    Parameters
+    ----------
+    points : np.ndarray
+        Array of 3D point coordinates in format [[X,Y,Z], [X2,Y2,Z2], ..., [Xn,Yn,Zn]]
+        Shape: (N, 3) where N is the number of points
     
-    xml_path: str
-        Path to xml to get stitching and nominal transforms from 
-
-    Returns: 
-    --------
-    transformed_points: np.ndarray
-        XYZ locations in stitched coordinate space (N x 3)
-
+    tile_name : str
+        Name identifier of the tile to retrieve the transform for
+    
+    xml_path : str
+        Path to BigStitcher XML file containing stitching and nominal transforms
+    
+    Returns
+    -------
+    transformed_points : np.ndarray
+        Transformed XYZ locations in stitched (global) coordinate space
+        Shape: (N, 3)
+    
+    Raises
+    ------
+    ValueError
+        If no transform is found for the specified tile
+    
+    Notes
+    -----
+    The function handles the conversion of 3x4 affine matrices to 4x4 homogeneous
+    matrices for proper matrix inversion. Empty point arrays are returned unchanged.
     """
-    # Points are in XYZ format
+    # Handle empty point arrays
     if points.shape[0] == 0:
         return points
     
@@ -42,14 +58,22 @@ def apply_stitching_to_points(points: np.ndarray, tile_name: str, xml_path: str)
     
     transform_matrix = transforms_dict[tile_id]  # This is a 3x4 matrix
     
-    #invert because points like forward transform, bigstitcher likes backwards transform
-    transform_matrix = np.linalg.inv(transform_matrix)
+    # Convert 3x4 affine matrix to 4x4 homogeneous matrix for inversion
+    # Add bottom row [0, 0, 0, 1] to make it square
+    transform_4x4 = np.vstack([transform_matrix, [0, 0, 0, 1]])
+    
+    # Invert the 4x4 matrix (BigStitcher stores backward transforms, we need forward)
+    transform_4x4_inv = np.linalg.inv(transform_4x4)
+    
+    # Extract the 3x4 portion (we don't need the bottom row for computation)
+    transform_matrix_inv = transform_4x4_inv[:3, :]
+    
     # Apply affine transformation: transformed = transform_matrix @ [points; 1]
     # Add homogeneous coordinate (column of ones)
-    points_homogeneous = np.hstack([points, np.ones((points.shape[0], 1))])  # N x 4
+    points_homogeneous = np.hstack([points, np.ones((points.shape[0], 1))])  # Shape: (N, 4)
     
-    # Apply transform: (3x4) @ (4xN) = (3xN), then transpose to get Nx3
-    transformed_points = (transform_matrix @ points_homogeneous.T).T  # N x 3
+    # Apply transform: (3x4) @ (4xN)^T = (3xN)^T, then transpose to get (N, 3)
+    transformed_points = (transform_matrix_inv @ points_homogeneous.T).T
     
     return transformed_points
 
