@@ -44,7 +44,7 @@ class SpotAnalysisPipeline:
         #Config = Config()
         
        
-        if run_Config == None: 
+        if Config == None: 
             self.config = Config()
         Config.SPOTS_FOLDER = spots_folder
         # Config.DATA_FOLDER = Path('/data/').as_posix(),
