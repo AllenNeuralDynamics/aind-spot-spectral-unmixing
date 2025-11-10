@@ -43,10 +43,11 @@ class TileProcessor:
         try:
             # Configure tile context
             self.config.set_current_tile(tile_name)
+            tile_spots_folder = self.spots_folder / tile_name
 
             # Run pipeline for tile
             pipeline = SpotAnalysisPipeline(
-                spots_folder=self.spots_folder,
+                spots_folder=tile_spots_folder,
                 output_folder=self.output_folder.joinpath(tile_name),
                 min_distances=self.min_distances
             )
