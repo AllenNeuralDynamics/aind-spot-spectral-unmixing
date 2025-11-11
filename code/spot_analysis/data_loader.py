@@ -3,7 +3,7 @@ import pandas as pd
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 from .config import Config
-from ..utils.transform_utils import apply_stitching_to_points
+from utils.transform_utils import apply_stitching_to_points
 
 
 class SpotDataLoader:
