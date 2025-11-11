@@ -81,8 +81,8 @@ class SpotAnalysisPipeline:
         
         # Create handlers
         console_handler = logging.StreamHandler()
-        tile_suffix = f'_tile_{Config.CURRENT_TILE}' if Config.CURRENT_TILE else ''
-        log_path = Config.OUTPUT_FOLDER / f'round_{Config.ROUND_N}{tile_suffix}_processing.log'
+        tile_suffix = f'_tile_{self.config.CURRENT_TILE}' if self.config.CURRENT_TILE else ''
+        log_path = self.config.OUTPUT_FOLDER / f'round_{self.config.ROUND_N}{tile_suffix}_processing.log'
         file_handler = logging.FileHandler(log_path)
         
         # Create formatters and add it to handlers
@@ -100,9 +100,9 @@ class SpotAnalysisPipeline:
     
     def run(self):
         """Run the complete spot analysis pipeline"""
-        tile_suffix = f'_tile_{Config.CURRENT_TILE}' if Config.CURRENT_TILE else ''
-        tile_label = Config.CURRENT_TILE or 'N/A'
-        self.logger.info(f"Starting analysis for Round {Config.ROUND_N}, Tile {tile_label}")
+        tile_suffix = f'_tile_{self.config.CURRENT_TILE}' if self.config.CURRENT_TILE else ''
+        tile_label = self.config.CURRENT_TILE or 'N/A'
+        self.logger.info(f"Starting analysis for Round {self.config.ROUND_N}, Tile {tile_label}")
         
         try:
             # 1. Load Data
@@ -121,17 +121,17 @@ class SpotAnalysisPipeline:
             )
             
             # Save intermediate results
-            mixed_output_path = Config.OUTPUT_FOLDER / f'mixed_spots_R{Config.ROUND_N}{tile_suffix}.pkl'
-            mixed_scratch_path = Config.SCRATCH_FOLDER / f'mixed_spots_R{Config.ROUND_N}{tile_suffix}.pkl'
+            mixed_output_path = self.config.OUTPUT_FOLDER / f'mixed_spots_R{self.config.ROUND_N}{tile_suffix}.pkl'
+            mixed_scratch_path = self.config.SCRATCH_FOLDER / f'mixed_spots_R{self.config.ROUND_N}{tile_suffix}.pkl'
             spots_df.to_pickle(mixed_output_path)
             spots_df.to_pickle(mixed_scratch_path)
             
             # 3. Calculate ratios
             self.logger.info("Calculating channel ratios...")
-            ratio_path = Config.OUTPUT_FOLDER / f'r{Config.ROUND_N}{tile_suffix}_ratios.txt'
+            ratio_path = self.config.OUTPUT_FOLDER / f'r{self.config.ROUND_N}{tile_suffix}_ratios.txt'
             intensity_cols = [
                 f'chan_{ch}_intensity'
-                for ch in Config.get_round_spot_channels()
+                for ch in self.config.get_round_spot_channels()
             ]
             # ratios = self.ratio_calculator.calculate_ratios( #tim's old way
             #     spots_df[intensity_cols].values,
@@ -149,7 +149,7 @@ class SpotAnalysisPipeline:
             stats_df = self.unmixer.calculate_distances(spots_df, ratios)
 
             #save stats_df
-            stats_df_csv_path = Config.OUTPUT_FOLDER / f'spot_unmixing_stats{tile_suffix}.csv'
+            stats_df_csv_path = self.config.OUTPUT_FOLDER / f'spot_unmixing_stats{tile_suffix}.csv'
             stats_df.to_csv(stats_df_csv_path)
             
             # 5. Application of QC filters has been moved to interactive capsule
@@ -205,14 +205,14 @@ class SpotAnalysisPipeline:
     def _save_summary_statistics(self, results):
         """Save summary statistics for all processing runs"""
         summary_stats = []
-        tile_suffix = f'_tile_{Config.CURRENT_TILE}' if Config.CURRENT_TILE else ''
+        tile_suffix = f'_tile_{self.config.CURRENT_TILE}' if self.config.CURRENT_TILE else ''
         
         for min_dist, (unmixed_df, stats) in results.items():
             for channel_stat in stats:
                 stat_dict = {
                     'min_dist': min_dist,
-                    'round': Config.ROUND_N,
-                    'tile': Config.CURRENT_TILE,
+                    'round': self.config.ROUND_N,
+                    'tile': self.config.CURRENT_TILE,
                     **channel_stat
                 }
                 summary_stats.append(stat_dict)
@@ -220,8 +220,8 @@ class SpotAnalysisPipeline:
         # Create summary DataFrame and save
         summary_df = pd.DataFrame(summary_stats)
         summary_df.to_csv(
-            Config.OUTPUT_FOLDER / 
-            f'round_{Config.ROUND_N}{tile_suffix}_summary_stats.csv',
+            self.config.OUTPUT_FOLDER / 
+            f'round_{self.config.ROUND_N}{tile_suffix}_summary_stats.csv',
             index=False
         )
 
