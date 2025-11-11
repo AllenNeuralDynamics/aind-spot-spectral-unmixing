@@ -188,6 +188,10 @@ class Config:
 
     @classmethod
     def get_folder_paths(cls) -> Dict[str, Any]:
+        """
+        Get folder paths for the current tile only.
+        Ensures that only data from CURRENT_TILE is returned.
+        """
         cls._ensure_folder_paths_loaded()
         if cls.CURRENT_TILE is None:
             tiles = cls.get_unique_tiles()
@@ -203,7 +207,22 @@ class Config:
                 )
         if cls.folder_paths_by_tile is None:
             raise ValueError("Folder paths not initialized")
-        return cls.folder_paths_by_tile[cls.CURRENT_TILE]
+        
+        # Validate that we're only returning paths for the current tile
+        current_tile_paths = cls.folder_paths_by_tile[cls.CURRENT_TILE]
+        
+        # Double-check that all paths contain the current tile name to prevent cross-contamination
+        tile_name = cls.CURRENT_TILE
+        for channel, path in current_tile_paths.get('spots_folders', {}).items():
+            if tile_name not in str(path) and 'single_tile' not in str(path):
+                print(f"Warning: spots_folders path for channel {channel} does not contain tile name {tile_name}: {path}")
+        
+        for source_ch, targets in current_tile_paths.get('multichan_folders', {}).items():
+            for target_ch, path in targets.items():
+                if tile_name not in str(path) and 'single_tile' not in str(path):
+                    print(f"Warning: multichan_folders path for {source_ch}->{target_ch} does not contain tile name {tile_name}: {path}")
+        
+        return current_tile_paths
 
     
     @classmethod
