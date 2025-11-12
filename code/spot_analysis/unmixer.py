@@ -7,8 +7,8 @@ from typing import List, Dict, Tuple
 from .config import Config
 
 class SpotUnmixer:
-    def __init__(self):
-        self.config = Config
+    def __init__(self, config):
+        self.config = config
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     
     def calculate_distances(
@@ -20,7 +20,7 @@ class SpotUnmixer:
         intensity_cols = [
             f'chan_{ch}_intensity'
             for ch in self.config.get_round_spot_channels()
-        ]
+        ]process_multiple_distances
         
         # Convert to GPU tensors
         data_gpu = torch.from_numpy(
