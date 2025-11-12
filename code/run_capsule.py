@@ -103,7 +103,7 @@ class TileProcessor:
         print("MERGING TILE TABLES")
         print("=" * 80)
         
-        merger = TableMerger()
+        merger = TableMerger(self.config)
         
         # Merge all table types
         merged_results = merger.merge_all_tables(min_dist=self.min_distances[0])

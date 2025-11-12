@@ -11,8 +11,8 @@ from .config import Config
 class TableMerger:
     """Merges single-tile spot tables (both mixed and unmixed) into combined tables."""
     
-    def __init__(self):
-        self.config = Config
+    def __init__(self, config):
+        self.config = config
         self.logger = logging.getLogger(__name__)
     
     def find_tile_tables(
