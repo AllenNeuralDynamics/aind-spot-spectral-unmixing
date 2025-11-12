@@ -20,7 +20,7 @@ class SpotUnmixer:
         intensity_cols = [
             f'chan_{ch}_intensity'
             for ch in self.config.get_round_spot_channels()
-        ]process_multiple_distances
+        ]
         
         # Convert to GPU tensors
         data_gpu = torch.from_numpy(
