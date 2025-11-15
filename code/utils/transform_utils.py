@@ -215,8 +215,8 @@ def extract_nominal_and_stitching_transforms(xml_path: str) -> dict[int, list[di
             print(f"transform {transform}")
             if transform["Name"] == "Translation to Nominal Grid": 
                 nominal_and_stitching_transforms[view_id].append(transform)
-            elif transform["Name"] == "Stitching Transform": 
-                nominal_and_stitching_transforms[view_id].append(transform)
+            # elif transform["Name"] == "Stitching Transform": 
+            #     nominal_and_stitching_transforms[view_id].append(transform)
             # elif transform["Name"] == "Camera Alignment Affine": 
             #     nominal_and_stitching_transforms[view_id].append(transform)
             else: 
