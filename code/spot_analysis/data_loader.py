@@ -64,26 +64,26 @@ class SpotDataLoader:
         spots_df['z_center_tile'] = spots_df['z_center'].copy()
         
         # Apply transform to spot locations (x, y, z)
-        # points_xyz = spots_df[['x', 'y', 'z']].values  # N x 3
-        # transformed_xyz = apply_stitching_to_points(
-        #     points_xyz, 
-        #     tile_name, 
-        #     self.config.STITCHING_XML_PATH
-        # )
-        # spots_df['x'] = transformed_xyz[:, 0]
-        # spots_df['y'] = transformed_xyz[:, 1]
-        # spots_df['z'] = transformed_xyz[:, 2]
+        points_xyz = spots_df[['x', 'y', 'z']].values  # N x 3
+        transformed_xyz = apply_stitching_to_points(
+            points_xyz, 
+            tile_name, 
+            self.config.STITCHING_XML_PATH
+        )
+        spots_df['x'] = transformed_xyz[:, 0]
+        spots_df['y'] = transformed_xyz[:, 1]
+        spots_df['z'] = transformed_xyz[:, 2]
         
         # Apply transform to spot centers (x_center, y_center, z_center)
-        # points_center = spots_df[['x_center', 'y_center', 'z_center']].values  # N x 3
-        # transformed_center = apply_stitching_to_points(
-        #     points_center, 
-        #     tile_name, 
-        #     self.config.STITCHING_XML_PATH
-        # )
-        # spots_df['x_center'] = transformed_center[:, 0]
-        # spots_df['y_center'] = transformed_center[:, 1]
-        # spots_df['z_center'] = transformed_center[:, 2]
+        points_center = spots_df[['x_center', 'y_center', 'z_center']].values  # N x 3
+        transformed_center = apply_stitching_to_points(
+            points_center, 
+            tile_name, 
+            self.config.STITCHING_XML_PATH
+        )
+        spots_df['x_center'] = transformed_center[:, 0]
+        spots_df['y_center'] = transformed_center[:, 1]
+        spots_df['z_center'] = transformed_center[:, 2]
         
         print(f"Applied stitching transform to {len(spots_df)} spots from tile {tile_name}")
         
@@ -255,6 +255,6 @@ class SpotDataLoader:
             mixed_spots_df[self.tile_col] = self.config.CURRENT_TILE
             
         # Apply stitching transforms if enabled
-        mixed_spots_df = self.apply_stitching_transform_to_spots(mixed_spots_df)
+        # mixed_spots_df = self.apply_stitching_transform_to_spots(mixed_spots_df)
             
         return mixed_spots_df    
