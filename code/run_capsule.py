@@ -15,7 +15,6 @@ class TileProcessor:
     def __init__(
         self,
         spots_folder: Path = Path('/data/'),
-        # spots_folder: Path = Path('/root/capsule/data/test_unmixing_independent_tiles'), # test folder /root/capsule/data/test_unmixing_independent_tiles
         output_folder: Path = Path('/results/'),
         min_distances: Optional[List[float]] = None
     ) -> None:
@@ -23,11 +22,13 @@ class TileProcessor:
         self.output_folder = output_folder
         self.min_distances = min_distances or [3.0]
 
-        # Prime configuration and discover available tiles
-        Config.SPOTS_FOLDER = spots_folder
-        Config.DATA_FOLDER = Path('/data/')
-        Config.OUTPUT_FOLDER = output_folder
+        # Create config instance and set INSTANCE attributes only
         self.config = Config()
+        self.config.SPOTS_FOLDER = spots_folder
+        self.config.DATA_FOLDER = Path('/data/')
+        self.config.OUTPUT_FOLDER = output_folder
+        
+        # Now discover tiles (which will use instance config)
         self.tiles = self.config.get_unique_tiles()
 
         print(f"\nFound {len(self.tiles)} tile(s) to process:")
@@ -50,7 +51,7 @@ class TileProcessor:
                 spots_folder=tile_spots_folder,
                 output_folder=self.output_folder.joinpath(tile_name),
                 min_distances=self.min_distances, 
-                Config = self.config
+                config = self.config
             )
             tile_results = pipeline.run()
 

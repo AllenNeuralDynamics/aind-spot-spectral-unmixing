@@ -7,63 +7,96 @@ import json
 
 class Config:
 
-    SPOTS_FOLDER = pathlib.Path('/data/')
-    DATA_FOLDER = pathlib.Path('/data/')
-    OUTPUT_FOLDER = pathlib.Path('/results/')
-    OUTPUT_DATA_TYPE = 'zarr'
-    SCRATCH_FOLDER = pathlib.Path('/scratch/')
-    STITCHING_XML_PATH: Optional[str] = DATA_FOLDER.joinpath('image_tile_alignment/combined_stitching_cam_alignment_all_channels.xml').as_posix()  # Path to XML file with stitching transforms
-    APPLY_STITCHING_TRANSFORM: bool = True  # Flag to enable/disable stitching transforms
+class Config:
+    """Configuration for spot analysis pipeline.
     
-    # Processing parameters
-    _default_ROUND_N = 0
-    MIN_DISTS = 5
-    PERCENTILE = 95
+    Each instance maintains isolated configuration state for independent processing.
+    """
     
-    # Demixing parameters
-    FRAC_SAMPLED = 0.1
-    N_SUBSET = 100000
-    EPOCHS = 10000
-    RESAMPLE_ITER = 50
-    L1 = 0
-    LEARNING_RATE = 1e-9
+    # CONSTANTS: These are truly static defaults that should be shared (read-only)
+    DEFAULT_GENE_DICT: Dict[str, Dict[str, str]] = {
+        '0': {'1': 'Vip', '2': 'Sst', '4': 'Slc17a7'},
+        '1': {'1': 'Cbln4', '2': 'Cdk18', '3': 'Kcnab1', '4': 'Nos1'},
+        '2': {'1': 'Adcyap1', '2': 'Rorb', '3': 'Myh7', '4': 'Pdyn'},
+        '3': {'1': 'Wfs1', '2': 'Npnt', '3': 'F2r12', '4': 'Trp53i11'},
+        '4': {'1': 'Thsd7a', '2': 'Syt6', '3': 'Car4', '4': 'Tmem215'},
+        '5': {'1': 'Pvalb', '2': 'Olig1', '3': 'Lypd1', '4': 'Synpr'},
+        '6': {'1': 'Parm1', '2': 'Sfrp2', '3': 'Tnnc1', '4': 'Penk'},
+        '7': {'1': 'Etv1', '2': 'Lsp1', '3': 'Slc18a3', '4': 'Calb1'},
+        '8': {'1': 'Alcam', '2': 'Cidea', '3': 'Prss23', '4': 'Il1rap12'},
+        '9': {'1': 'Cplx', '2': 'Ctss', '3': 'Npy'},
+        '10': {'1': 'Slc18a8', '2': 'Tshz2', '3': 'Egln3', '4': 'Lpl'},
+        '11': {'1': 'Gad2', '2': 'Ostn', '3': 'Lhx6', '4': 'Stk17b'},
+        '12': {'1': 'Cck', '2': 'Crispld2', '3': 'Nmbr', '4': 'Anxa2'},
+        '13': {'1': 'Snap25', '2': 'lgfbp4', '3': 'Chrm2', '4': 'Ndnf'}
+    }
     
-    # QC parameters --- these are getting moved to qc capsule
-    CENT_CUTOFF = 1
-    CORR_CUTOFF = 0.5
-    DIST_CUTOFF = 4
-    # cell by gene table parameters    
-    min_dist = 3
-    volume_quantiles = (0.08, 0.5, 0.95)
-
-    CURRENT_TILE: Optional[str] = None
-    folder_paths = None
-    folder_paths_by_tile: Optional[Dict[str, Dict[str, Any]]] = None
-
-    # Gene dictionary
-    DEFAULT_GENE_DICT: Dict[str, Dict[str, str]] = {'0':{'1': 'Vip', '2': 'Sst', '4': 'Slc17a7'},
-            '1':{'1': 'Cbln4', '2': 'Cdk18', '3': 'Kcnab1', '4': 'Nos1'},
-            '2':{'1': 'Adcyap1', '2': 'Rorb', '3': 'Myh7', '4': 'Pdyn'},
-            '3':{'1': 'Wfs1', '2': 'Npnt', '3': 'F2r12', '4': 'Trp53i11'},
-            '4':{'1': 'Thsd7a', '2': 'Syt6', '3': 'Car4', '4': 'Tmem215'},
-            '5':{'1': 'Pvalb', '2': 'Olig1', '3': 'Lypd1', '4': 'Synpr'},
-            '6':{'1': 'Parm1', '2': 'Sfrp2', '3': 'Tnnc1', '4': 'Penk'},
-            '7':{'1': 'Etv1', '2': 'Lsp1', '3': 'Slc18a3', '4': 'Calb1'},
-            '8':{'1': 'Alcam', '2': 'Cidea', '3': 'Prss23', '4': 'Il1rap12'},
-            '9':{'1': 'Cplx', '2': 'Ctss', '3': 'Npy',},
-            '10':{'1': 'Slc18a8', '2': 'Tshz2', '3': 'Egln3', '4': 'Lpl'},
-            '11':{'1': 'Gad2', '2': 'Ostn', '3': 'Lhx6', '4': 'Stk17b'},
-            '12':{'1': 'Cck', '2': 'Crispld2', '3': 'Nmbr', '4': 'Anxa2'},
-            '13':{'1': 'Snap25', '2': 'lgfbp4', '3': 'Chrm2', '4': 'Ndnf'}}
+    # Default values for parameters (used as fallbacks during initialization)
+    _DEFAULT_ROUND_N = 0
+    _DEFAULT_MIN_DISTS = 5
+    _DEFAULT_PERCENTILE = 95
+    _DEFAULT_FRAC_SAMPLED = 0.1
+    _DEFAULT_N_SUBSET = 100000
+    _DEFAULT_EPOCHS = 10000
+    _DEFAULT_RESAMPLE_ITER = 50
+    _DEFAULT_L1 = 0
+    _DEFAULT_LEARNING_RATE = 1e-9
+    _DEFAULT_CENT_CUTOFF = 1
+    _DEFAULT_CORR_CUTOFF = 0.5
+    _DEFAULT_DIST_CUTOFF = 4
+    _DEFAULT_MIN_DIST = 3
+    _DEFAULT_VOLUME_QUANTILES = (0.08, 0.5, 0.95)
+    _DEFAULT_OUTPUT_DATA_TYPE = 'zarr'
+    _DEFAULT_APPLY_STITCHING_TRANSFORM = True
 
     def __init__(self):
+        """Initialize a new Config instance with isolated state."""
+        
+        # Path configuration - INSTANCE ATTRIBUTES (mutable per tile)
+        self.SPOTS_FOLDER = pathlib.Path('/data/')
+        self.DATA_FOLDER = pathlib.Path('/data/')
+        self.OUTPUT_FOLDER = pathlib.Path('/results/')
+        self.SCRATCH_FOLDER = pathlib.Path('/scratch/')
+        self.OUTPUT_DATA_TYPE = self._DEFAULT_OUTPUT_DATA_TYPE
+        
+        # Stitching configuration
+        self.STITCHING_XML_PATH: Optional[str] = self.DATA_FOLDER.joinpath(
+            'image_tile_alignment/combined_stitching_cam_alignment_all_channels.xml'
+        ).as_posix()
+        self.APPLY_STITCHING_TRANSFORM: bool = self._DEFAULT_APPLY_STITCHING_TRANSFORM
+        
+        # Processing parameters - INSTANCE ATTRIBUTES
+        self.ROUND_N = self._DEFAULT_ROUND_N
+        self.MIN_DISTS = self._DEFAULT_MIN_DISTS
+        self.PERCENTILE = self._DEFAULT_PERCENTILE
+        
+        # Demixing parameters - INSTANCE ATTRIBUTES
+        self.FRAC_SAMPLED = self._DEFAULT_FRAC_SAMPLED
+        self.N_SUBSET = self._DEFAULT_N_SUBSET
+        self.EPOCHS = self._DEFAULT_EPOCHS
+        self.RESAMPLE_ITER = self._DEFAULT_RESAMPLE_ITER
+        self.L1 = self._DEFAULT_L1
+        self.LEARNING_RATE = self._DEFAULT_LEARNING_RATE
+        
+        # QC parameters - INSTANCE ATTRIBUTES
+        self.CENT_CUTOFF = self._DEFAULT_CENT_CUTOFF
+        self.CORR_CUTOFF = self._DEFAULT_CORR_CUTOFF
+        self.DIST_CUTOFF = self._DEFAULT_DIST_CUTOFF
+        
+        # Cell by gene table parameters - INSTANCE ATTRIBUTES
+        self.min_dist = self._DEFAULT_MIN_DIST
+        self.volume_quantiles = self._DEFAULT_VOLUME_QUANTILES
+        
+        # Tile-specific state - INSTANCE ATTRIBUTES
+        self.CURRENT_TILE: Optional[str] = None
+        self.folder_paths = None
+        self.folder_paths_by_tile: Optional[Dict[str, Dict[str, Any]]] = None
+        
+        # Initialize from manifest
         self._load_manifest()
         self._update_round_from_manifest()
         self._make_gene_dict_from_manifest()
-        self.folder_paths = None
         self._ensure_folder_paths_loaded()
-
-        
 
     #@classmethod
     #def _load_manifest(cls):

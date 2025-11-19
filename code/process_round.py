@@ -24,38 +24,25 @@ from spot_analysis.cell_by_gene_table import cell_by_gene_processor
 class SpotAnalysisPipeline:
     def __init__(
         self,
-        #round_number: int,
         spots_folder: Path = Path('/data/'),
         output_folder: Path = Path('/results/'),
         min_distances: Optional[List[float]] = None,
-        Config = None
+        config = None  # Lowercase parameter name for clarity
     ):
-        """
-        Initialize the spot analysis pipeline.
-        
-        Args:
-            round_number: The round number to process
-            spots_folder: Path to the folder containing spot data
-            output_folder: Path to save results
-            min_distances: List of minimum distances to try for unmixing
-        """
-        # Update configuration
-        #Config.ROUND_N = round_number
-        #Config = Config()
-        
-       
-        if Config == None: 
-            self.config = Config()
+        # Use instance-only config
+        if config is None: 
+            self.config = Config()  # Create new instance
         else: 
-            self.config = Config
-        Config.SPOTS_FOLDER = spots_folder
-        # Config.DATA_FOLDER = Path('/data/').as_posix(),
-        Config.OUTPUT_FOLDER = output_folder
-        Config.OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
-        Config.SCRATCH_FOLDER.mkdir(parents=True, exist_ok=True)
-                # SET THE CURRENT TILE!
+            self.config = config  # Use passed instance
         
-        # Set default min distances if not provided
+        # Update INSTANCE attributes only (no class modification!)
+        self.config.SPOTS_FOLDER = spots_folder
+        self.config.OUTPUT_FOLDER = output_folder
+        
+        # Create directories using instance config
+        self.config.OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
+        self.config.SCRATCH_FOLDER.mkdir(parents=True, exist_ok=True)
+        
         self.min_distances = min_distances or [3.0, 4.0, 5.0]
         
         # Initialize components
