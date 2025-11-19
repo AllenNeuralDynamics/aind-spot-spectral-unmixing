@@ -123,7 +123,7 @@ class Config:
     
     def _update_round_from_manifest(self):
         if not self.manifest:
-            self.ROUND_N = self._default_ROUND_N
+            self.ROUND_N = self._DEFAULT_ROUND_N
             return
         round = self.manifest['round']
         # if round != -1: 
@@ -212,6 +212,15 @@ class Config:
         self.CURRENT_TILE = tile_name
         self.folder_paths = self.folder_paths_by_tile[tile_name]
         print(f"Set current tile to: {tile_name}")
+        
+        # DEBUG: Print sample paths to verify they're tile-specific
+        if self.folder_paths and 'spots_folders' in self.folder_paths:
+            first_channel = list(self.folder_paths['spots_folders'].keys())[0] if self.folder_paths['spots_folders'] else None
+            if first_channel:
+                sample_path = self.folder_paths['spots_folders'][first_channel]
+                print(f"  DEBUG: Sample spots path for channel {first_channel}: {sample_path}")
+                if tile_name not in str(sample_path):
+                    print(f"  WARNING: Path does not contain expected tile name '{tile_name}'!")
 
     
     def get_folder_paths(self) -> Dict[str, Any]:
