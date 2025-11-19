@@ -154,13 +154,11 @@ class Config:
         gene_dict[str(round)] = temp_dict
         self.GENE_DICT = gene_dict
         
-
-    
+            
     def get_round_channels(self) -> Dict[str, str]:
         return self.GENE_DICT[str(self.ROUND_N)]
         
-        
-    
+
     def get_round_spot_channels(self) -> List[str]:
         if self.manifest and self.manifest.get('spot_channels'):
             return self.manifest['spot_channels']
