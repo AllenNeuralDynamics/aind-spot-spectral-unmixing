@@ -50,7 +50,7 @@ class SpotAnalysisPipeline:
         self.processor = SpotProcessor(self.config)
         self.ratio_calculator = RatioCalculator(self.config)
         self.unmixer = SpotUnmixer(self.config)
-        self.cell_by_gene_processor = cell_by_gene_processor()
+        self.cell_by_gene_processor = cell_by_gene_processor(self.config)
         
         # Setup logging
         self.logger = self._setup_logging()

@@ -385,9 +385,7 @@ class Config:
                 print(
                     f"Warning{tile_label}: Mismatch in multichannel targets for channel {source_channel}. "
                     f"Missing: {missing}, Extra: {extra}"
-                )
-
-    
+                )  
     def get_and_validate_folder_paths(self) -> Dict[str, Any]:
         """Gets folder paths and validates them"""
         self._ensure_folder_paths_loaded()
