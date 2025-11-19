@@ -44,8 +44,7 @@ class Config:
     _DEFAULT_DIST_CUTOFF = 4
     _DEFAULT_MIN_DIST = 3
     _DEFAULT_VOLUME_QUANTILES = (0.08, 0.5, 0.95)
-    _DEFAULT_OUTPUT_DATA_TYPE = 'zarr'
-    _DEFAULT_APPLY_STITCHING_TRANSFORM = True
+    _DEFAULT_APPLY_STITCHING_TRANSFORM = False
 
     def __init__(self):
         """Initialize a new Config instance with isolated state."""
@@ -55,7 +54,6 @@ class Config:
         self.DATA_FOLDER = pathlib.Path('/data/')
         self.OUTPUT_FOLDER = pathlib.Path('/results/')
         self.SCRATCH_FOLDER = pathlib.Path('/scratch/')
-        self.OUTPUT_DATA_TYPE = self._DEFAULT_OUTPUT_DATA_TYPE
         
         # Stitching configuration
         self.STITCHING_XML_PATH: Optional[str] = self.DATA_FOLDER.joinpath(
@@ -96,19 +94,19 @@ class Config:
         self._make_gene_dict_from_manifest()
         self._ensure_folder_paths_loaded()
 
-    #@classmethod
-    #def _load_manifest(cls):
+    #
+    #def _load_manifest(self):
     #    """Load the processing manifest JSON file"""
 
-        # manifest_path = pathlib.Path(cls.dataset_name) / 'derived' / 'processing_manifest.json'
-    #    manifest_path = list(pathlib.Path(cls.DATA_FOLDER).glob("derived/processing_manifest.json"))
+        # manifest_path = pathlib.Path(self.dataset_name) / 'derived' / 'processing_manifest.json'
+    #    manifest_path = list(pathlib.Path(self.DATA_FOLDER).glob("derived/processing_manifest.json"))
         
     
     #    if not len(manifest_path):
     #        print(f'didnt find pipeline processing manifest')
             #raise FileNotFoundError("No processing_manifest.json was found!")
         
-    #        manifest_path = list(pathlib.Path(cls.DATA_FOLDER).glob("*/derived/processing_manifest.json"))
+    #        manifest_path = list(pathlib.Path(self.DATA_FOLDER).glob("*/derived/processing_manifest.json"))
     #        if not len(manifest_path):
     #            raise FileNotFoundError("No capsule processing_manifest.json was found!")
 
@@ -117,34 +115,34 @@ class Config:
 
     #    try:
     #        with open(manifest_path[0], 'r') as f:
-    #            cls.manifest = json.load(f)
+    #            self.manifest = json.load(f)
     #    except FileNotFoundError:
-    #        cls.manifest = None
+    #        self.manifest = None
     #        raise FileNotFoundError(f"Processing manifest not found at {manifest_path}")
 
-    @classmethod
-    def _update_round_from_manifest(cls):
-        if not cls.manifest:
-            cls.ROUND_N = cls._default_ROUND_N
+    
+    def _update_round_from_manifest(self):
+        if not self.manifest:
+            self.ROUND_N = self._default_ROUND_N
             return
-        round = cls.manifest['round']
+        round = self.manifest['round']
         # if round != -1: 
-        cls.ROUND_N = round
+        self.ROUND_N = round
         # else:
-            # cls.ROUND_N = cls._default_ROUND_N
+            # self.ROUND_N = self._default_ROUND_N
 
         """ Processing Manifest Json Example
     {'segmentation_channels': {'background': '405', 'nuclear': None}, 'spot_channels': ['561', '488', '638'], 'round': 1, 'stitching_channels': ['561', '488', '638'], 'gene_dict': {'405': {'gene': 'Rn28s', 'barcode': '', 'fluorophore': '', 'wavelength': 'dtype:', 'round': 1}, '561': {'gene': 'Calb2', 'barcode': 'B7', 'fluorophore': '', 'wavelength': '561,', 'round': 1}, '488': {'gene': 'Npy', 'barcode': 'B1', 'fluorophore': '', 'wavelength': '488,', 'round': 1}, '638': {'gene': 'Tac1', 'barcode': 'B3', 'fluorophore': '', 'wavelength': '638,', 'round': 1}}}"""
 
-    @classmethod
-    def _make_gene_dict_from_manifest(cls):
+    
+    def _make_gene_dict_from_manifest(self):
         """Make a gene_dict from the processing manifest"""
-        if not cls.manifest:
-            cls.GENE_DICT = cls.DEFAULT_GENE_DICT
+        if not self.manifest:
+            self.GENE_DICT = self.DEFAULT_GENE_DICT
             return
-        spot_channels = cls.manifest['spot_channels']
-        round = cls.manifest['round']
-        manifest_gene_dict = cls.manifest['gene_dict']
+        spot_channels = self.manifest['spot_channels']
+        round = self.manifest['round']
+        manifest_gene_dict = self.manifest['gene_dict']
 
         #gene_dict is a dict of dicts with keys: round { channel: gene_name}
         temp_dict = {}
@@ -154,96 +152,96 @@ class Config:
         
         gene_dict= {}
         gene_dict[str(round)] = temp_dict
-        cls.GENE_DICT = gene_dict
+        self.GENE_DICT = gene_dict
         
 
-    @classmethod
-    def get_round_channels(cls) -> Dict[str, str]:
-        return cls.GENE_DICT[str(cls.ROUND_N)]
+    
+    def get_round_channels(self) -> Dict[str, str]:
+        return self.GENE_DICT[str(self.ROUND_N)]
         
         
-    @classmethod
-    def get_round_spot_channels(cls) -> List[str]:
-        if cls.manifest and cls.manifest.get('spot_channels'):
-            return cls.manifest['spot_channels']
-        return list(cls.get_round_channels().keys())
+    
+    def get_round_spot_channels(self) -> List[str]:
+        if self.manifest and self.manifest.get('spot_channels'):
+            return self.manifest['spot_channels']
+        return list(self.get_round_channels().keys())
 
-    @classmethod
-    def _ensure_folder_paths_loaded(cls) -> None:
-        if cls.folder_paths_by_tile is not None:
+    
+    def _ensure_folder_paths_loaded(self) -> None:
+        if self.folder_paths_by_tile is not None:
             return
 
-        tile_data = cls.get_folder_paths_pipeline()
+        tile_data = self.get_folder_paths_pipeline()
         if not tile_data:
             raise FileNotFoundError("No spot intensity files were found under the data folder.")
 
-        cls.folder_paths_by_tile = tile_data
+        self.folder_paths_by_tile = tile_data
         tile_list = list(tile_data.keys())
         print(f"Found {len(tile_list)} tile(s): {tile_list}")
 
-        if cls.CURRENT_TILE is None and len(tile_list) == 1:
-            cls.CURRENT_TILE = tile_list[0]
-            print(f"Auto-selected single tile: {cls.CURRENT_TILE}")
+        if self.CURRENT_TILE is None and len(tile_list) == 1:
+            self.CURRENT_TILE = tile_list[0]
+            print(f"Auto-selected single tile: {self.CURRENT_TILE}")
 
-        if cls.CURRENT_TILE is not None:
-            cls.folder_paths = cls.folder_paths_by_tile.get(cls.CURRENT_TILE)
+        if self.CURRENT_TILE is not None:
+            self.folder_paths = self.folder_paths_by_tile.get(self.CURRENT_TILE)
 
-    @classmethod
-    def get_unique_tiles(cls) -> List[str]:
-        cls._ensure_folder_paths_loaded()
-        if cls.folder_paths_by_tile is None:
+    
+    def get_unique_tiles(self) -> List[str]:
+        self._ensure_folder_paths_loaded()
+        if self.folder_paths_by_tile is None:
             return []
-        return list(cls.folder_paths_by_tile.keys())
+        return list(self.folder_paths_by_tile.keys())
 
-    @classmethod
-    def get_folder_paths_for_tile(cls, tile_name: str) -> Dict[str, Any]:
-        cls._ensure_folder_paths_loaded()
-        available_tiles = list(cls.folder_paths_by_tile.keys()) if cls.folder_paths_by_tile else []
-        if cls.folder_paths_by_tile is None or tile_name not in cls.folder_paths_by_tile:
+    
+    def get_folder_paths_for_tile(self, tile_name: str) -> Dict[str, Any]:
+        self._ensure_folder_paths_loaded()
+        available_tiles = list(self.folder_paths_by_tile.keys()) if self.folder_paths_by_tile else []
+        if self.folder_paths_by_tile is None or tile_name not in self.folder_paths_by_tile:
             raise ValueError(
                 f"Tile {tile_name} not found in folder paths. Available tiles: {available_tiles}"
             )
-        return cls.folder_paths_by_tile[tile_name]
+        return self.folder_paths_by_tile[tile_name]
 
-    @classmethod
-    def set_current_tile(cls, tile_name: str) -> None:
-        cls._ensure_folder_paths_loaded()
-        available_tiles = list(cls.folder_paths_by_tile.keys()) if cls.folder_paths_by_tile else []
-        if cls.folder_paths_by_tile is None or tile_name not in cls.folder_paths_by_tile:
+    
+    def set_current_tile(self, tile_name: str) -> None:
+        self._ensure_folder_paths_loaded()
+        available_tiles = list(self.folder_paths_by_tile.keys()) if self.folder_paths_by_tile else []
+        if self.folder_paths_by_tile is None or tile_name not in self.folder_paths_by_tile:
             raise ValueError(
                 f"Tile {tile_name} not found. Available tiles: {available_tiles}"
             )
-        cls.CURRENT_TILE = tile_name
-        cls.folder_paths = cls.folder_paths_by_tile[tile_name]
+        self.CURRENT_TILE = tile_name
+        self.folder_paths = self.folder_paths_by_tile[tile_name]
         print(f"Set current tile to: {tile_name}")
 
-    @classmethod
-    def get_folder_paths(cls) -> Dict[str, Any]:
+    
+    def get_folder_paths(self) -> Dict[str, Any]:
         """
         Get folder paths for the current tile only.
         Ensures that only data from CURRENT_TILE is returned.
         """
-        cls._ensure_folder_paths_loaded()
-        if cls.CURRENT_TILE is None:
-            tiles = cls.get_unique_tiles()
+        self._ensure_folder_paths_loaded()
+        if self.CURRENT_TILE is None:
+            tiles = self.get_unique_tiles()
             if len(tiles) == 1:
-                cls.CURRENT_TILE = tiles[0]
-                if cls.folder_paths_by_tile is not None:
-                    cls.folder_paths = cls.folder_paths_by_tile[cls.CURRENT_TILE]
-                print(f"Auto-selected single tile: {cls.CURRENT_TILE}")
+                self.CURRENT_TILE = tiles[0]
+                if self.folder_paths_by_tile is not None:
+                    self.folder_paths = self.folder_paths_by_tile[self.CURRENT_TILE]
+                print(f"Auto-selected single tile: {self.CURRENT_TILE}")
             else:
                 raise ValueError(
                     "Multiple tiles detected but no current tile set. "
                     "Call Config.set_current_tile(tile_name) before accessing folder paths."
                 )
-        if cls.folder_paths_by_tile is None:
+        if self.folder_paths_by_tile is None:
             raise ValueError("Folder paths not initialized")
         
         # Validate that we're only returning paths for the current tile
-        current_tile_paths = cls.folder_paths_by_tile[cls.CURRENT_TILE]
+        current_tile_paths = self.folder_paths_by_tile[self.CURRENT_TILE]
         
         # Double-check that all paths contain the current tile name to prevent cross-contamination
-        tile_name = cls.CURRENT_TILE
+        tile_name = self.CURRENT_TILE
         for channel, path in current_tile_paths.get('spots_folders', {}).items():
             if tile_name not in str(path) and 'single_tile' not in str(path):
                 print(f"Warning: spots_folders path for channel {channel} does not contain tile name {tile_name}: {path}")
@@ -256,16 +254,16 @@ class Config:
         return current_tile_paths
 
     
-    @classmethod
-    def _load_manifest(cls):
+    
+    def _load_manifest(self):
         """Load the processing manifest JSON file"""
         #pipeline path
-        manifest_path = list(pathlib.Path(cls.DATA_FOLDER).glob("processing_manifest.json"))
+        manifest_path = list(pathlib.Path(self.DATA_FOLDER).glob("processing_manifest.json"))
         # manifest_path = list(pathlib.Path('/data').glob("processing_manifest.json"))
         
         if not len(manifest_path):
             print('Didn\'t find pipeline processing manifest')
-            manifest_path = list(pathlib.Path(cls.DATA_FOLDER).glob("*/processing_manifest.json"))
+            manifest_path = list(pathlib.Path(self.DATA_FOLDER).glob("*/processing_manifest.json"))
             if not len(manifest_path):
                 raise FileNotFoundError("No capsule processing_manifest.json was found!")
 
@@ -273,14 +271,14 @@ class Config:
 
         try:
             with open(manifest_path[0], 'r') as f:
-                cls.manifest = json.load(f)
-                print(f"Loaded manifest with channels: {cls.manifest.get('spot_channels', [])}")
+                self.manifest = json.load(f)
+                print(f"Loaded manifest with channels: {self.manifest.get('spot_channels', [])}")
         except FileNotFoundError:
-            cls.manifest = None
+            self.manifest = None
             raise FileNotFoundError(f"Processing manifest not found at {manifest_path}")
 
-    @classmethod
-    def get_folder_paths_pipeline(cls) -> Dict[str, Dict[str, Any]]: #get_folder_paths_pipeline
+    
+    def get_folder_paths_pipeline(self) -> Dict[str, Dict[str, Any]]: #get_folder_paths_pipeline
         """Returns folder paths from what is attached in /data/, organized by tile"""
         tile_regex = re.compile(
             r"(Tile_X_\d{4}_Y_\d{4}_Z_\d{4})_ch_(\d{1,3})_stats/"
@@ -294,7 +292,7 @@ class Config:
         legacy_spots: Dict[str, str] = {}
         legacy_multichan: Dict[str, Dict[str, str]] = {}
 
-        for root, dirs, files in os.walk(cls.DATA_FOLDER):
+        for root, dirs, files in os.walk(self.DATA_FOLDER):
             # Exclude .zarr directories
             dirs[:] = [d for d in dirs if not d.endswith('.zarr')]
             for file in files:
@@ -302,7 +300,7 @@ class Config:
                 if '.zarr' in root:
                     continue
                 full_path = os.path.join(root, file)
-                relative_path = os.path.relpath(full_path, cls.DATA_FOLDER)
+                relative_path = os.path.relpath(full_path, self.DATA_FOLDER)
 
                 # Check for tile-based spot intensity files
                 tile_match = tile_regex.match(relative_path)
@@ -351,10 +349,10 @@ class Config:
 
         return {}
 
-    @classmethod
-    def validate_folder_paths(cls, folder_paths: Dict[str, Any], tile_name: Optional[str] = None) -> None:
+    
+    def validate_folder_paths(self, folder_paths: Dict[str, Any], tile_name: Optional[str] = None) -> None:
         """Validates the generated folder paths"""
-        expected_channels = set(cls.get_round_channels().keys())
+        expected_channels = set(self.get_round_channels().keys())
         tile_label = f" for tile {tile_name}" if tile_name else ""
         
         # Validate spots folders
@@ -389,12 +387,12 @@ class Config:
                     f"Missing: {missing}, Extra: {extra}"
                 )
 
-    @classmethod
-    def get_and_validate_folder_paths(cls) -> Dict[str, Any]:
+    
+    def get_and_validate_folder_paths(self) -> Dict[str, Any]:
         """Gets folder paths and validates them"""
-        cls._ensure_folder_paths_loaded()
-        tile_paths = cls.get_folder_paths()
-        cls.validate_folder_paths(tile_paths, cls.CURRENT_TILE)
-        cls.folder_paths = tile_paths
+        self._ensure_folder_paths_loaded()
+        tile_paths = self.get_folder_paths()
+        self.validate_folder_paths(tile_paths, self.CURRENT_TILE)
+        self.folder_paths = tile_paths
         return tile_paths
         
