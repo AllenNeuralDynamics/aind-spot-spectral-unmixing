@@ -4,8 +4,8 @@ from typing import Tuple
 from .config import Config
 
 class SpotProcessor:
-    def __init__(self):
-        self.config = Config
+    def __init__(self, config):
+        self.config = config
     
     def calculate_intensities(self, spots_df: pd.DataFrame) -> pd.DataFrame:
         """Calculate intensities for each channel"""

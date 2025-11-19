@@ -6,11 +6,11 @@ import os
 from .config import Config
 
 class RatioCalculator:
-    def __init__(self):
+    def __init__(self, config):
         os.environ['CUDA_LAUNCH_BLOCKING'] = '1'  # Enable CUDA launch blocking
         os.environ['TORCH_USE_CUDA_DSA'] = '1'
 
-        self.config = Config
+        self.config = config
         # self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')#
         self.channels = self.config.get_round_spot_channels()
         

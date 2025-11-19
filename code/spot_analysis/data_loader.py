@@ -7,8 +7,8 @@ from utils.transform_utils import apply_stitching_to_points
 
 
 class SpotDataLoader:
-    def __init__(self):
-        self.config = Config
+    def __init__(self, config):
+        self.config = config
         self.spot_col_order = [
             'spot_id', 'chan', 'chan_spot_id', 'round',
             'z', 'y', 'x', 'z_center', 'y_center', 'x_center', 'dist', 'r'

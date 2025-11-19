@@ -46,9 +46,9 @@ class SpotAnalysisPipeline:
         self.min_distances = min_distances or [3.0, 4.0, 5.0]
         
         # Initialize components
-        self.data_loader = SpotDataLoader()
-        self.processor = SpotProcessor()
-        self.ratio_calculator = RatioCalculator()
+        self.data_loader = SpotDataLoader(self.config)
+        self.processor = SpotProcessor(self.config)
+        self.ratio_calculator = RatioCalculator(self.config)
         self.unmixer = SpotUnmixer(self.config)
         self.cell_by_gene_processor = cell_by_gene_processor()
         
