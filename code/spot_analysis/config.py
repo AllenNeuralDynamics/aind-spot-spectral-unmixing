@@ -6,8 +6,6 @@ import json
 
 
 class Config:
-
-class Config:
     """Configuration for spot analysis pipeline.
     
     Each instance maintains isolated configuration state for independent processing.
