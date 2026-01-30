@@ -1,49 +1,61 @@
 import numpy as np
 import pandas as pd
-import torch
 from scipy.spatial import cKDTree
 from pathlib import Path
 from typing import List, Dict, Tuple
 from .config import Config
 
 class SpotUnmixer:
-    def __init__(self):
-        self.config = Config
-        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    def __init__(self, config=None):
+        self.config = config if config is not None else Config
     
     def calculate_distances(
         self,
         spots_df: pd.DataFrame,
         ratios: np.ndarray
     ) -> pd.DataFrame:
-        """Calculate distances between spots and ratio lines"""
+        """Calculate distances between spots and ratio lines.
+        
+        Uses CPU/NumPy for computation to handle large datasets (32M+ spots)
+        that would exceed GPU VRAM limits.
+        
+        Args:
+            spots_df: DataFrame containing spot intensity data
+            ratios: Array of ratio vectors for each channel
+            
+        Returns:
+            DataFrame with distance statistics for each spot
+        """
         intensity_cols = [
             f'chan_{ch}_intensity'
             for ch in self.config.get_round_spot_channels()
         ]
         
-        # Convert to GPU tensors
-        data_gpu = torch.from_numpy(
-            np.array(spots_df[intensity_cols])
-        ).to(self.device).double()
-        ratios_gpu = torch.from_numpy(
-            ratios / np.linalg.norm(ratios, axis=0)
-        ).to(self.device).double()
+        # Extract data as numpy array (n_spots, n_channels)
+        data = np.array(spots_df[intensity_cols], dtype=np.float64)
         
-        # Calculate fits and distances
-        n_cam = len(self.config.get_round_spot_channels())
-        fit = torch.tile(data_gpu @ ratios_gpu, (n_cam, 1, 1))
-        fit *= torch.tile(
-            torch.unsqueeze(ratios_gpu, 1),
-            (1, len(spots_df), 1)
-        )
+        # Normalize ratios (n_channels, n_channels)
+        ratios_norm = ratios / np.linalg.norm(ratios, axis=0)
         
-        data_gpu = torch.tile(
-            torch.unsqueeze(data_gpu.T, 2),
-            (1, 1, n_cam)
-        )
+        # Calculate projection coefficients: (n_spots, n_channels)
+        # Each column represents how much each spot projects onto each ratio vector
+        projections = data @ ratios_norm
         
-        distances = torch.norm(fit - data_gpu, dim=0).cpu().numpy()
+        # Calculate fits and distances for each channel
+        # For each ratio vector, compute the fitted point and distance
+        n_channels = len(self.config.get_round_spot_channels())
+        n_spots = len(spots_df)
+        
+        # distances[i, j] = distance from spot i to ratio line j
+        distances = np.zeros((n_spots, n_channels), dtype=np.float64)
+        
+        for ch_idx in range(n_channels):
+            # Fitted point for this ratio: projection * ratio_vector
+            # fit shape: (n_spots, n_channels)
+            fit = np.outer(projections[:, ch_idx], ratios_norm[:, ch_idx])
+            
+            # Distance from data to fitted point
+            distances[:, ch_idx] = np.linalg.norm(fit - data, axis=1)
         
         return self._create_stats_dataframe(distances)
     
