@@ -6,13 +6,21 @@ from pathlib import Path
 def run():
     #TODO add argparse for round number, spots folder, output folder, min distances
 
-    #example 
-    pipeline = SpotAnalysisPipeline(
-        round_number=13,
-        spots_folder=Path('/data/'),
-        output_folder=Path('/results/'),
-        min_distances=[3.0, 4.0, 5.0] #can probably set default of 3 pixels and forget this
-    )
+    #example   
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("round", type=str, help="Dataset round until procedures.json is finished")
+    # args = parser.parse_args()
+    # round = int(args.round)
+
+
+    pipeline = SpotAnalysisPipeline(min_distances = [3])
+    
+    #pipeline = SpotAnalysisPipeline(
+    #    round_number=13,
+    #    spots_folder=Path('/data/'),
+    #     output_folder=Path('/results/'),
+    #    min_distances=[3.0, 4.0, 5.0] #can probably set default of 3 pixels and forget this
+    #)
     
     results = pipeline.run()
     

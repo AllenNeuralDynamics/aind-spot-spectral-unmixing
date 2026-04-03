@@ -24,7 +24,7 @@ from spot_analysis.cell_by_gene_table import cell_by_gene_processor
 class SpotAnalysisPipeline:
     def __init__(
         self,
-        round_number: int,
+        #round_number: int,
         spots_folder: Path = Path('/data/'),
         output_folder: Path = Path('/results/'),
         min_distances: Optional[List[float]] = None
@@ -39,7 +39,9 @@ class SpotAnalysisPipeline:
             min_distances: List of minimum distances to try for unmixing
         """
         # Update configuration
-        Config.ROUND_N = round_number
+        #Config.ROUND_N = round_number
+        #Config = Config()
+        self.config = Config()
         Config.SPOTS_FOLDER = spots_folder
         Config.OUTPUT_FOLDER = output_folder
         
@@ -116,35 +118,44 @@ class SpotAnalysisPipeline:
             ratio_path = Config.OUTPUT_FOLDER / f'r{Config.ROUND_N}_ratios.txt'
             intensity_cols = [
                 f'chan_{ch}_intensity'
-                for ch in Config.get_round_channels().keys()
+                for ch in Config.get_round_spot_channels()
             ]
-            ratios = self.ratio_calculator.calculate_ratios(
+            # ratios = self.ratio_calculator.calculate_ratios( #tim's old way
+            #     spots_df[intensity_cols].values,
+            #     ratio_path
+            # )
+            ratios = self.ratio_calculator.calculate_ratios_by_channel( #trying a weighted avg
                 spots_df[intensity_cols].values,
-                ratio_path
+                ratio_path, 
+                spots_df['chan'].values
             )
-            
+
             # 4. Calculate distances and create stats
             self.logger.info("Calculating distances between spots...")
-            thresh_spots_df = spots_df[spots_df['over_thresh']].copy()
-            stats_df = self.unmixer.calculate_distances(thresh_spots_df, ratios)
+            #thresh_spots_df = spots_df[spots_df['over_thresh']].copy()
+            stats_df = self.unmixer.calculate_distances(spots_df, ratios)
+
+            #save stats_df
+            stats_df_csv_name = '/results/spot_unmixing_stats.csv'
+            stats_df.to_csv(stats_df_csv_name)
             
-            # 5. Apply QC filters
+            # 5. Application of QC filters has been moved to interactive capsule
             self.logger.info("Applying QC filters...")
-            filtered_spots_df = self.processor.apply_qc_filters(
-                thresh_spots_df,
+            spots_df = self.processor.apply_qc_filters(
+                spots_df,
                 stats_df
             )
             
-            self.logger.info(
-                f"Kept {len(filtered_spots_df)} spots after QC "
-                f"({len(filtered_spots_df)/len(thresh_spots_df)*100:.1f}%)"
-            )
-            all_chans_filt_stats = self.unmixer.calculate_distances(filtered_spots_df, ratios)
+            #self.logger.info(
+            #    f"Kept {len(filtered_spots_df)} spots after QC "
+            #    f"({len(filtered_spots_df)/len(thresh_spots_df)*100:.1f}%)"
+            #)
+            all_chans_filt_stats = self.unmixer.calculate_distances(spots_df, ratios)
             
             # 6. Process multiple minimum distances
             self.logger.info("Running unmixing with multiple minimum distances...")
             results = self.unmixer.process_multiple_distances(
-                filtered_spots_df,
+                spots_df,
                 all_chans_filt_stats,
                 self.min_distances
             )
@@ -204,10 +215,9 @@ def main():
     """Main entry point"""
     # Example usage
     pipeline = SpotAnalysisPipeline(
-       round_number=13,
-       spots_folder=Path('/data/'),
-       output_folder=Path('/results/'),
-       min_distances=[3.0, 4.0, 5.0]
+       spots_folder=Path('/root/capsule/data/'),
+       output_folder=Path('/root/capsule/results/'),
+       min_distances=[3.0]
     )
 
     # parser = argparse.ArgumentParser()

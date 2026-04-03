@@ -49,21 +49,34 @@ class cell_by_gene_processor:
             for ch in round_chans:
                 ch_spots_df.loc[ch_spots_df['chan']==ch, 'gene'] = self.config.GENE_DICT[str(rn)][ch]
             
-            if unmixed:
-                ch_spots_df = ch_spots_df.loc[ch_spots_df['chan']==ch_spots_df['unmixed_chan']]
+            # if unmixed:
+                # ch_spots_df = ch_spots_df.loc[ch_spots_df['chan']==ch_spots_df['unmixed_chan']]
                 
             spots_df = pd.concat([spots_df, ch_spots_df])
             
         spots_df['cell_id'] = spots_df['cell_id'].astype('int')
         return spots_df
     
+    def apply_spot_filters(self, spots_df): 
+        """ Only returns the spots with 'valid_spot' column == True """
+
+        return spots_df.loc[spots_df['valid_spot']==True]
+
     def load_segmentation(self, rounds: List[int]) -> pd.DataFrame:
         """Load segmentation data for given rounds"""
         segmentation_df = pd.DataFrame()
         
         for rn in rounds: #TODO update this file name with the standard filename
-            file_location = self.config.DATA_FOLDER / f'reference_data_segmentation_R{rn}_metrics/metrics.pickle'
-            with open(file_location, 'rb') as file:
+        
+            file_location = list(pathlib.Path(self.config.DATA_FOLDER).glob('metrics.pickle')) #pipeline
+            
+            if len(file_location)>0:
+                file_loc = file_location[0]
+            else:
+                file_location = list(pathlib.Path(self.config.DATA_FOLDER).glob('*/cell_body_segmentation/metrics.pickle')) #capsule
+                file_loc = file_location[0]
+
+            with open(file_loc, 'rb') as file:
                 round_data = pickle.load(file)
                 
             round_df = pd.DataFrame(round_data).T
@@ -150,23 +163,24 @@ class cell_by_gene_processor:
         """Run the complete processing pipeline"""
         # Process unmixed spots
         unmixed_spots = self.load_spots(rounds, unmixed=True)
+        unmixed_spots_filtered = self.apply_spot_filters(unmixed_spots)
         segmentation = self.load_segmentation(rounds)
-        unmixed_annotations = self.process_cell_annotations(unmixed_spots, segmentation)
-        filtered_unmixed = self.filter_by_volume(unmixed_annotations)
+        unmixed_annotations = self.process_cell_annotations(unmixed_spots_filtered, segmentation)
+        #filtered_unmixed = self.filter_by_volume(unmixed_annotations)
         
         # Process mixed spots
         mixed_spots = self.load_spots(rounds, unmixed=False)
         mixed_annotations = self.process_cell_annotations(mixed_spots, segmentation)
-        filtered_mixed = self.filter_by_volume(mixed_annotations)
+        #filtered_mixed = self.filter_by_volume(mixed_annotations)
         
         # Save results
-        filtered_unmixed.to_pickle(self.config.SCRATCH_FOLDER / 'unmixed_cell_by_gene.pkl')
-        filtered_mixed.to_pickle(self.config.SCRATCH_FOLDER / 'mixed_cell_by_gene.pkl')
+        unmixed_annotations.to_pickle(self.config.SCRATCH_FOLDER / 'unmixed_cell_by_gene.pkl')
+        mixed_annotations.to_pickle(self.config.SCRATCH_FOLDER / 'mixed_cell_by_gene.pkl')
 
-        filtered_unmixed.to_csv(self.config.OUTPUT_FOLDER / 'unmixed_cell_by_gene.csv')
-        filtered_mixed.to_csv(self.config.OUTPUT_FOLDER / 'mixed_cell_by_gene.csv')
+        unmixed_annotations.to_csv(self.config.OUTPUT_FOLDER / 'unmixed_cell_by_gene.csv')
+        mixed_annotations.to_csv(self.config.OUTPUT_FOLDER / 'mixed_cell_by_gene.csv')
         
-        return filtered_unmixed, filtered_mixed
+        return unmixed_annotations, mixed_annotations
 
 # Example usage
 if __name__ == "__main__":
